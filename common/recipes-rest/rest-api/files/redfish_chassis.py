@@ -15,11 +15,11 @@ class RedfishChassis:
 
     def get_server_name(self):
         "Returns the server name for an fru that their routes include"
-        server_name = "1"  # default for single sled frus
-        if self.fru_name is not None:
-            #  replace slot with server
-            server_name = self.fru_name.replace("slot", "server")
-        return server_name
+        return (
+            self.fru_name.replace("slot", "server")
+            if self.fru_name is not None
+            else "1"
+        )
 
     async def get_chassis(self, request: str) -> web.Response:
         members_json = redfish_chassis_helper.get_chassis_members_json()
@@ -38,22 +38,21 @@ class RedfishChassis:
         server_name = self.get_server_name()
         body = {
             "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
-            "@odata.id": "/redfish/v1/Chassis/{}".format(server_name),
+            "@odata.id": f"/redfish/v1/Chassis/{server_name}",
             "@odata.type": "#Chassis.v1_5_0.Chassis",
             "Id": "1",
             "Name": "Computer System Chassis",
             "ChassisType": "RackMount",
-            "Manufacturer": "",  # will add input in next diff
-            "Model": "",  # will add input in next diff
-            "SerialNumber": "",  # will add input in next diff
+            "Manufacturer": "",
+            "Model": "",
+            "SerialNumber": "",
             "PowerState": "On",
             "Status": {"State": "Enabled", "Health": "OK"},
-            "Thermal": {
-                "@odata.id": "/redfish/v1/Chassis/{}/Thermal".format(server_name)
-            },
-            "Power": {"@odata.id": "/redfish/v1/Chassis/{}/Power".format(server_name)},
+            "Thermal": {"@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal"},
+            "Power": {"@odata.id": f"/redfish/v1/Chassis/{server_name}/Power"},
             "Links": {},
         }
+
         await validate_keys(body)
         return web.json_response(body, dumps=dumps_bytestr)
 
@@ -76,16 +75,14 @@ class RedfishChassis:
             )
             body = {
                 "@odata.type": "#Thermal.v1_7_0.Thermal",
-                "@odata.id": "/redfish/v1/Chassis/{}/Thermal".format(server_name),
+                "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal",
                 "Id": "Thermal",
                 "Name": "Thermal",
                 "Temperatures": temperature_sensors_json,
                 "Fans": fan_sensors_json,
                 "Redundancy": [
                     {
-                        "@odata.id": "/redfish/v1/Chassis/{}/Thermal#/Redundancy/0".format(  # noqa: B950
-                            server_name
-                        ),
+                        "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal#/Redundancy/0",
                         "MemberId": "0",
                         "Name": "BaseBoard System Fans",
                         "RedundancySet": redundancy_list,
@@ -94,6 +91,7 @@ class RedfishChassis:
                     }
                 ],
             }
+
             await validate_keys(body)
         else:
             raise NotImplementedError("Redfish is not supported in this platform")
@@ -111,12 +109,13 @@ class RedfishChassis:
             )
             body = {
                 "@odata.context": "/redfish/v1/$metadata#Power.Power",
-                "@odata.id": "/redfish/v1/Chassis/{}/Power".format(server_name),
+                "@odata.id": f"/redfish/v1/Chassis/{server_name}/Power",
                 "@odata.type": "#Power.v1_5_0.Power",
                 "Id": "Power",
                 "Name": "Power",
                 "PowerControl": power_control_sensors_json,
             }
+
             await validate_keys(body)
         else:
             raise NotImplementedError("Redfish is not supported in this platform")

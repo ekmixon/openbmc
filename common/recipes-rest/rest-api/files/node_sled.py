@@ -23,30 +23,17 @@ from rest_pal_legacy import *
 
 class sledNode(node):
     def __init__(self, info=None, actions=None):
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def doAction(self, data, param={}):
-        if pal_sled_action(data["action"]) == -1:
-            res = "failure"
-        else:
-            res = "success"
-
-        result = {"result": res}
-
-        return result
+        res = "failure" if pal_sled_action(data["action"]) == -1 else "success"
+        return {"result": res}
 
 
 def get_node_sled():
     name = pal_get_platform_name()
-    info = {"Description": name + " SLED"}
+    info = {"Description": f"{name} SLED"}
     actions = ["sled-cycle", "sled-identify-on", "sled-identify-off"]
 
     return sledNode(info, actions)

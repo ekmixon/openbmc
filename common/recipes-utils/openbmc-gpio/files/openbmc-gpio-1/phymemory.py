@@ -35,10 +35,7 @@ class PhyMemory(object):
             )
 
     def __str__(self):
-        if self.name == "":
-            return "0x%x" % self.addr
-        else:
-            return self.name
+        return "0x%x" % self.addr if self.name == "" else self.name
 
     def _read_hw(self):
         if self.write_pending:
@@ -88,7 +85,7 @@ class PhyMemory(object):
     def is_bit_set(self, bit, refresh=False):
         assert 0 <= bit <= 31
         self.read(refresh=refresh)
-        rc = True if self.value & (0x1 << bit) else False
+        rc = bool(self.value & (0x1 << bit))
         logging.debug("Test bit %s[%d](0x%x): %s" % (str(self), bit, self.value, rc))
         return rc
 

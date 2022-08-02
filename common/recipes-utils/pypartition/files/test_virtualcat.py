@@ -295,13 +295,10 @@ class TestVirtualCat(unittest.TestCase):
         call_list = []
         for i in range(5):
             image = MagicMock()
-            image.file_name = "/file{}".format(i)
-            call_list.append(call(image.file_name, "rb"))
-            call_list.append(call().tell())
+            image.file_name = f"/file{i}"
+            call_list.extend((call(image.file_name, "rb"), call().tell()))
             image.size = i + 1
-            call_list.append(call().seek(image.size))
-            call_list.append(call().tell())
-            call_list.append(call().close())
+            call_list.extend((call().seek(image.size), call().tell(), call().close()))
             image_list.append(image)
         call_list.append(call().close())
         with virtualcat.VirtualCat(image_list) as vc:

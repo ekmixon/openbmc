@@ -120,8 +120,9 @@ class TestRestFscdSensorData(AioHTTPTestCase):
 
         mock_destination_file_path = unittest.mock.patch(
             "rest_fscd_sensor_data.DESTINATION_FILE_PATH",
-            mock_destination_dir.name + "/incoming_fscd_sensor_data.json",
+            f"{mock_destination_dir.name}/incoming_fscd_sensor_data.json",
         )
+
         mock_destination_file_path.start()
         self.addCleanup(mock_destination_file_path.stop)
 

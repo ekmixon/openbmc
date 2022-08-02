@@ -49,7 +49,7 @@ class TestRatelimiterDoesNotTriggerWhenLimitIs0(test_utils.AioHTTPTestCase):
 
     @test_utils.unittest_run_loop
     async def test_ratelimiter_does_not_trigger(self):
-        for _ in range(0, 10):
+        for _ in range(10):
             await self.__assert_normal_request()
 
 
@@ -72,7 +72,7 @@ class TestRatelimiterWorks(test_utils.AioHTTPTestCase):
 
     @test_utils.unittest_run_loop
     async def test_ratelimiter_triggers_when_limit_exceeded(self):
-        for _ in range(0, 2):
+        for _ in range(2):
             await self.__assert_normal_request()
         headers = {"User-Agent": "test-agent"}
         request = await self.client.request("GET", "/test", headers=headers)
@@ -80,7 +80,7 @@ class TestRatelimiterWorks(test_utils.AioHTTPTestCase):
 
     @test_utils.unittest_run_loop
     async def test_ratelimiter_allows_other_useragents_but_blocks_blocked_ones(self):
-        for _ in range(0, 2):
+        for _ in range(2):
             await self.__assert_normal_request()
         headers = {"User-Agent": "test-agent"}
         request = await self.client.request("GET", "/test", headers=headers)
@@ -89,6 +89,6 @@ class TestRatelimiterWorks(test_utils.AioHTTPTestCase):
 
     @test_utils.unittest_run_loop
     async def test_ratelimiter_allows_other_methods_for_same_agent(self):
-        for _ in range(0, 2):
+        for _ in range(2):
             await self.__assert_normal_request()
         await self.__assert_normal_request("POST")

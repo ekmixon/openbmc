@@ -59,12 +59,11 @@ class Partition(object):
         if self.length != self.partition_size:
             self.valid = False
             self.logger.warning(
-                "Read {} of {} expected bytes from {}.".format(
-                    self.length, self.partition_size, self
-                )
+                f"Read {self.length} of {self.partition_size} expected bytes from {self}."
             )
+
         else:
-            self.logger.info("{} readable.".format(self))
+            self.logger.info(f"{self} readable.")
 
     # This initializer will be called by all subclasses, so all subclass
     # overridden logic and types must be encapsulated in the above checksum
@@ -126,9 +125,8 @@ class ExternalChecksumPartition(Partition):
         # type: (bytes) -> None
         if self.read_size < self.partition_data_size:
             check_size = len(data)
-            if check_size > self.partition_data_size - self.read_size:
-                check_size = self.partition_data_size - self.read_size
-            self.md5sum.update(data[0:check_size])
+            check_size = min(check_size, self.partition_data_size - self.read_size)
+            self.md5sum.update(data[:check_size])
             self.read_size += check_size
             self.checksums_data += data[check_size:]
         else:
@@ -149,35 +147,29 @@ class ExternalChecksumPartition(Partition):
 
             checksums.extend(checksums_json.keys())
             self.logger.info(
-                "U-Boot partition appended with MD5 checksums: {}".format(
-                    checksums_json
-                )
+                f"U-Boot partition appended with MD5 checksums: {checksums_json}"
             )
+
         except (ValueError, AttributeError) as e:
             # There was no valid JSON object appended to the partition
             self.logger.info(
-                "Could not find MD5 checksums appended to U-Boot partition: {}".format(
-                    repr(e)
-                )
+                f"Could not find MD5 checksums appended to U-Boot partition: {repr(e)}"
             )
+
             self.md5sum.update(self.checksums_data)
 
-        if self.md5sum.hexdigest() not in checksums:
-            if "PLACEHOLDER" in self.checksums:
-                self.checksums.remove("PLACEHOLDER")
-                self.checksums.append(self.md5sum.hexdigest())
-                self.logger.info(
-                    "{} md5sum {} added.".format(self, self.md5sum.hexdigest())
-                )
-            else:
-                self.valid = False
-                self.logger.error(
-                    "{} md5sum {} not in {}.".format(
-                        self, self.md5sum.hexdigest(), checksums
-                    )
-                )
+        if self.md5sum.hexdigest() in checksums:
+            self.logger.info(f"{self} has known good md5sum.")
+
+        elif "PLACEHOLDER" in self.checksums:
+            self.checksums.remove("PLACEHOLDER")
+            self.checksums.append(self.md5sum.hexdigest())
+            self.logger.info(f"{self} md5sum {self.md5sum.hexdigest()} added.")
         else:
-            self.logger.info("{} has known good md5sum.".format(self))
+            self.valid = False
+            self.logger.error(
+                f"{self} md5sum {self.md5sum.hexdigest()} not in {checksums}."
+            )
 
     def __init__(self, size, offset, name, images, checksums, logger):
         # type: (int, int, str, VirtualCat, List[str], object) -> None
@@ -212,7 +204,7 @@ class EnvironmentPartition(Partition):
         if self.data_crc32 != self.parsed_header["data_crc32"]:
             self.valid = False
             if self.parsed_header["data_crc32"] == 0 and self.data_crc32 == 0x8B2A7AE8:
-                self.logger.info("{} zeroed out.".format(self))
+                self.logger.info(f"{self} zeroed out.")
             else:
                 message = "{} data crc32 0x{:08x} != expected 0x{:08x}."
                 self.logger.error(
@@ -221,7 +213,7 @@ class EnvironmentPartition(Partition):
                     )
                 )
         else:
-            self.logger.info("{} has valid data crc32.".format(self))
+            self.logger.info(f"{self} has valid data crc32.")
 
     def __init__(self, size, offset, name, images, logger):
         # type: (Optional[int], int, str, VirtualCat, object) -> None
@@ -241,7 +233,7 @@ class EnvironmentPartition(Partition):
                 value_string = value
             else:
                 value_string = str(value)
-            self.info_strings.append("{}: {}".format(key, value_string))
+            self.info_strings.append(f"{key}: {value_string}")
         # TODO use enum names
         logger.info(", ".join(self.info_strings))
         Partition.__init__(self, size, offset, name, images, logger)
@@ -457,7 +449,7 @@ class DeviceTreePartition(Partition):
             elif token == DeviceTreePartition.FDT_END:
                 raise InvalidPartitionException("FDT_END before FDT_END_NODE")
             else:
-                raise InvalidPartitionException("Unsupported token {}".format(token))
+                raise InvalidPartitionException(f"Unsupported token {token}")
 
     @staticmethod
     def property_name_value(images, strings, logger):
@@ -509,7 +501,7 @@ class DeviceTreePartition(Partition):
                 value_string = "0x{:08x}".format(value)
             else:
                 value_string = str(value)
-            info_strings.append("{}: {}".format(key, value_string))
+            info_strings.append(f"{key}: {value_string}")
         logger.info(", ".join(info_strings))
 
         if parsed_header["magic"] != DeviceTreePartition.magic:
@@ -584,15 +576,11 @@ class DeviceTreePartition(Partition):
             if properties[b"data"] != expected:
                 self.valid = False
                 logger.error(
-                    "{} {} {} != {}.".format(
-                        name,
-                        properties[b"hash@1"][b"algo"],
-                        properties[b"data"],
-                        expected,
-                    )
+                    f'{name} {properties[b"hash@1"][b"algo"]} {properties[b"data"]} != {expected}.'
                 )
+
             else:
-                logger.info("{} checksum matches.".format(name))
+                logger.info(f"{name} checksum matches.")
                 if external:
                     simple_name = name.decode()
                     if "@" in simple_name:
@@ -612,4 +600,4 @@ class DeviceTreePartition(Partition):
             - parsed_header["structure_block_size"]
         )
 
-        logger.info("{} has valid checksums.".format(self))
+        logger.info(f"{self} has valid checksums.")

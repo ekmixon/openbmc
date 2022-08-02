@@ -62,26 +62,28 @@ class Redfish:
     def setup_multisled_routes(self, app: Application):
         no_of_slots = rest_pal_legacy.pal_get_num_slots()
         for i in range(1, no_of_slots + 1):  # +1 to iterate uptill last slot
-            server_name = "server{}".format(i)
-            redfish_chassis = RedfishChassis("slot{}".format(i))
+            server_name = f"server{i}"
+            redfish_chassis = RedfishChassis(f"slot{i}")
             app.router.add_get(
-                "/redfish/v1/Chassis/{}".format(server_name),
+                f"/redfish/v1/Chassis/{server_name}",
                 redfish_chassis.get_chassis_members,
             )
-            app.router.add_post(
-                "/redfish/v1/Chassis/{}".format(server_name), self.controller
-            )
+
+            app.router.add_post(f"/redfish/v1/Chassis/{server_name}", self.controller)
             app.router.add_get(
-                "/redfish/v1/Chassis/{}/Power".format(server_name),
+                f"/redfish/v1/Chassis/{server_name}/Power",
                 redfish_chassis.get_chassis_power,
             )
+
             app.router.add_post(
-                "/redfish/v1/Chassis/{}/Power".format(server_name), self.controller
+                f"/redfish/v1/Chassis/{server_name}/Power", self.controller
             )
+
             app.router.add_get(
-                "/redfish/v1/Chassis/{}/Thermal".format(server_name),
+                f"/redfish/v1/Chassis/{server_name}/Thermal",
                 redfish_chassis.get_chassis_thermal,
             )
+
             app.router.add_post(
-                "/redfish/v1/Chassis/{}/Thermal".format(server_name), self.controller
+                f"/redfish/v1/Chassis/{server_name}/Thermal", self.controller
             )

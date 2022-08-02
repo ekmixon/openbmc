@@ -20,10 +20,11 @@ async def post_fscd_sensor_data(request: aiohttp.web.Request) -> aiohttp.web.Res
         return aiohttp.web.json_response(
             {
                 "status": "Bad Request",
-                "details": "Invalid JSON payload: " + str(e),
+                "details": f"Invalid JSON payload: {str(e)}",
             },
             status=400,
         )
+
 
     # Create temporary file before moving to destination to make an atomic update
     # (i.e. remove the possibility of a partial file being read)
@@ -46,7 +47,7 @@ def _validate_payload(payload, schema, path="") -> bool:
 
     if type(schema) == dict:
         for key, value in payload.items():
-            _validate_payload(payload=value, schema=schema[key], path=path + "." + key)
+            _validate_payload(payload=value, schema=schema[key], path=f"{path}.{key}")
 
 
 def _schema_match(payload, schema):

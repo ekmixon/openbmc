@@ -47,7 +47,7 @@ def write_status():
     global status
     if statuspath is None:
         return
-    tmppath = statuspath + "~"
+    tmppath = f"{statuspath}~"
     with open(tmppath, "w") as tfh:
         tfh.write(json.dumps(status))
     os.rename(tmppath, statuspath)
@@ -198,9 +198,7 @@ async def get_status(addr: int):
         "packet_size_error",
         "pass_code_error",
     ]
-    res = {}
-    for i, flag in enumerate(flags):
-        res[flag] = status >> i & 0x1 == 0
+    res = {flag: status >> i & 0x1 == 0 for i, flag in enumerate(flags)}
     res["mode"] = "ISP" if res["mode"] else "MAP"
     return res
 
@@ -227,10 +225,7 @@ async def send_target(
         chunk = data[n * PACKET_SIZE : (n + 1) * PACKET_SIZE]
         if len(chunk) < PACKET_SIZE:
             chunk += b"\xff" * (PACKET_SIZE - len(chunk))
-        if sent == 0:
-            timeout = 3000
-        else:
-            timeout = 500
+        timeout = 3000 if sent == 0 else 500
         seqbytes = struct.pack(">H", seq)
         explen = (3 + rlen) if rlen != 0 else 0
         resp = await request(
@@ -240,12 +235,12 @@ async def send_target(
         sent += PACKET_SIZE
         if resp[0] == 0xC5:
             # error
-            raise ArtesynError("Error response: {}".format(resp), resp=resp)
+            raise ArtesynError(f"Error response: {resp}", resp=resp)
         if resp[0] == 0x45:
-            if resp[4] == 0x00 or resp[4] == 0x0A:
+            if resp[4] in [0x00, 0x0A]:
                 seq += 1
             else:
-                raise ArtesynError("Block sequence error: {}".format(resp), resp=resp)
+                raise ArtesynError(f"Block sequence error: {resp}", resp=resp)
         sl.update(
             "Flashing {}... {:.2%} \r".format(
                 target.name, (sent + prev_sent) / total_data
@@ -257,7 +252,7 @@ async def send_target(
             )
         )
         status["flash_progress_percent"] = 100 * (sent + prev_sent) / total_data
-    sl.done("Flashed {}".format(target.name))
+    sl.done(f"Flashed {target.name}")
     return sent
 
 
@@ -277,7 +272,7 @@ async def aupd(addr, image, targetnames):
     total_sent = 0
     try:
         for name in targetnames:
-            status_state("flashing target {}".format(name))
+            status_state(f"flashing target {name}")
             target = targets[name]
             entered.append(name)
             enter_tries = 3
@@ -303,14 +298,14 @@ async def aupd(addr, image, targetnames):
                     raise e
             if target.name == "logic" and result[0] & 0x80 != 0:
                 raise RequestError("Error entering ISP mode", result)
-            print("ISP enter: {}".format(name))
+            print(f"ISP enter: {name}")
         for name in reversed(targetnames):
             target = targets[name]
             total_sent += await send_target(addr, image, target, total_sent, total_data)
     finally:
         for name in reversed(entered):
             target = targets[name]
-            sl.done("Exiting update of {}".format(target.name))
+            sl.done(f"Exiting update of {target.name}")
             status_state("done")
             await request(addr, isp_exit(target), timeout=3000)
     await asyncio.sleep(2)

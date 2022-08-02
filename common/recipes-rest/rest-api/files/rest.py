@@ -58,9 +58,6 @@ config = parse_config(configpath)
 logging.config.dictConfig(get_logger_config(config))
 
 
-servers = []
-
-
 app = WebApp.instance()
 app["ratelimiter"] = AsyncRateLimiter(
     slidewindow_size=int(config["ratelimit_window"]), limit=int(config["max_requests"])
@@ -73,8 +70,7 @@ handler = app.make_handler(
     access_log=access_logger, access_log_format=ACCESS_LOG_FORMAT
 )
 
-servers.extend([loop.create_server(handler, "*", port) for port in config["ports"]])
-
+servers = [loop.create_server(handler, "*", port) for port in config["ports"]]
 if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
     ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     if config["ssl_ca_certificate"]:

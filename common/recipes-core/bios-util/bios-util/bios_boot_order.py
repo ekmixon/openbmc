@@ -64,8 +64,6 @@ def boot_order(fru, argv):
 
 
 def do_boot_order_action(option, function, data, boot_order_data):
-    req_data = [""]
-
     boot_mode = boot_order_data[0] & 0x1
     clear_CMOS = (boot_order_data[0] & 0x2) >> 1
     force_boot_BIOS_setup = (boot_order_data[0] & 0x4) >> 2
@@ -83,7 +81,7 @@ def do_boot_order_action(option, function, data, boot_order_data):
                 print("Invalid Boot Device ID!")
                 print(boot_order_device)
         elif function == "--clear_CMOS":
-            print("Clear CMOS Function: " + status_decode(clear_CMOS & boot_flags_valid))
+            print(f"Clear CMOS Function: {status_decode(clear_CMOS & boot_flags_valid)}")
         elif function == "--force_boot_BIOS_setup":
             print(
                 "Force Boot to BIOS Setup Function: "
@@ -114,7 +112,7 @@ def do_boot_order_action(option, function, data, boot_order_data):
         if function == "--boot_order":
             set_boot_order = data
             for num in set_boot_order:
-                if not int(num) in boot_order_device:
+                if int(num) not in boot_order_device:
                     print("Invalid Boot Device ID!")
                     exit(-1)
             boot_order = set_boot_order
@@ -122,6 +120,8 @@ def do_boot_order_action(option, function, data, boot_order_data):
             boot_mode = int(data[0])
 
     if option != "get":
+        req_data = [""]
+
         req_data[0] = (
             (boot_order_data[0] & ~0x07) | (boot_mode) | (clear_CMOS << 1)
         ) | (force_boot_BIOS_setup << 2)

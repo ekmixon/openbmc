@@ -38,22 +38,11 @@ class FscSensorBase(object):
             self.read_source = kwargs["read_source"]
         if "write_source" in kwargs:
             self.write_source = kwargs["write_source"]
-            if "max_duty_register" in kwargs:
-                self.max_duty_register = kwargs["max_duty_register"]
-            else:
-                self.max_duty_register = 100
+            self.max_duty_register = kwargs.get("max_duty_register", 100)
         else:
             self.write_source = None
-        if "write_type" in kwargs:
-            self.write_type = kwargs["write_type"]
-        else:
-            self.write_type = None
-
-        if "filter" in kwargs:
-            self.filter = kwargs["filter"]
-        else:
-            self.filter = None
-
+        self.write_type = kwargs.get("write_type")
+        self.filter = kwargs.get("filter")
         self.read_source_fail_counter = 0
         self.write_source_fail_counter = 0
         self.read_source_wrong_counter = 0
@@ -90,13 +79,14 @@ class FscSensorSourceSysfs(FscSensorBase):
         self.hwmon_source = None
         result = re.split("hwmon", self.read_source)
         if os.path.isdir(result[0]):
-            construct_hwmon_path = result[0] + "hwmon"
+            construct_hwmon_path = f"{result[0]}hwmon"
             x = None
             for x in os.listdir(construct_hwmon_path):
                 if x.startswith("hwmon"):
                     construct_hwmon_path = (
-                        construct_hwmon_path + "/" + x + "/" + result[2].split("/")[1]
+                        f"{construct_hwmon_path}/{x}/" + result[2].split("/")[1]
                     )
+
                     if os.path.exists(construct_hwmon_path):
                         self.hwmon_source = construct_hwmon_path
                         return self.hwmon_source
@@ -192,14 +182,16 @@ class FscSensorSourceUtil(FscSensorBase):
                     if board != kwargs["fru"]:
                         continue
                     #sname = sdata[1]
-                    cmd += " " + sdata[1]
+                    cmd += f" {sdata[1]}"
             elif "num" in kwargs and len(kwargs["num"]):
-                cmd = ""
-                for num in kwargs["num"]:
-                    cmd += self.read_source + " " + kwargs["fru"] + " " + num + ";"
+                cmd = "".join(
+                    f"{self.read_source} " + kwargs["fru"] + " " + num + ";"
+                    for num in kwargs["num"]
+                )
+
             else:
-                cmd = cmd + " " + kwargs["fru"]
-        Logger.debug("Reading data with cmd=%s" % cmd)
+                cmd = f"{cmd} " + kwargs["fru"]
+        Logger.debug(f"Reading data with cmd={cmd}")
         data = ""
         try:
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
@@ -207,7 +199,7 @@ class FscSensorSourceUtil(FscSensorBase):
             Logger.debug("SystemExit from sensor read")
             raise
         except Exception:
-            Logger.crit("Exception with cmd=%s response=%s" % (cmd, data))
+            Logger.crit(f"Exception with cmd={cmd} response={data}")
         return data
 
     def write(self, value):
@@ -223,17 +215,17 @@ class FscSensorSourceUtil(FscSensorBase):
         if self.write_source is None:
             return
         cmd = self.write_source % (int(value * self.max_duty_register / 100))
-        Logger.debug("Setting value using cmd=%s" % cmd)
+        Logger.debug(f"Setting value using cmd={cmd}")
         response = ""
         try:
             response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             if response.find("Error") != -1:
-                raise Exception("Write failed with response=%s" % response)
+                raise Exception(f"Write failed with response={response}")
         except SystemExit:
             Logger.debug("SystemExit from sensor write")
             raise
         except Exception:
-            Logger.crit("Exception with cmd=%s response=%s" % (cmd, response))
+            Logger.crit(f"Exception with cmd={cmd} response={response}")
 
 
 class FscSensorSourceKv(FscSensorBase):
@@ -253,7 +245,7 @@ class FscSensorSourceKv(FscSensorBase):
             blob of data read from kv
         """
 
-        Logger.debug("Reading data with kv=%s" % self.read_source)
+        Logger.debug(f"Reading data with kv={self.read_source}")
         data = ""
         try:
             data = kv_get(self.read_source)
@@ -261,7 +253,7 @@ class FscSensorSourceKv(FscSensorBase):
             Logger.debug("SystemExit from sensor read")
             raise
         except Exception:
-            Logger.crit("Exception with read=%s" % self.read_source)
+            Logger.crit(f"Exception with read={self.read_source}")
         return data
 
     def write(self, value):
@@ -274,7 +266,7 @@ class FscSensorSourceKv(FscSensorBase):
             Logger.debug("SystemExit from sensor write")
             raise
         except Exception:
-            Logger.crit("Exception with write=%s" % self.write_source)
+            Logger.crit(f"Exception with write={self.write_source}")
 
     def write_kv(self, value):
         """
@@ -304,11 +296,11 @@ class FscSensorSourceKv(FscSensorBase):
         """
 
         cmd = self.write_source % (int(value * self.max_duty_register / 100))
-        Logger.debug("Setting value using cmd=%s" % cmd)
+        Logger.debug(f"Setting value using cmd={cmd}")
         try:
             response = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             if response.find("Error") != -1:
-                raise Exception("Write failed with response=%s" % response)
+                raise Exception(f"Write failed with response={response}")
         except Exception:
             raise
 
@@ -332,7 +324,7 @@ class FscSensorSourceJson(FscSensorBase):
             raw data read from json file
         """
         try:
-            Logger.debug("Reading data with json file=%s" % self.read_source)
+            Logger.debug(f"Reading data with json file={self.read_source}")
             with open(self.read_source, "r") as file:
                 return file.read()
 

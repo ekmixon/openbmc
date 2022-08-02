@@ -28,13 +28,9 @@ GPIO_SHADOW_DIR = '/tmp/gpionames'
 def gpio_name_to_num(name):
     shadowdir = os.path.join(GPIO_SHADOW_DIR, name)
     if os.path.islink(shadowdir):
-        num = int(os.path.realpath(shadowdir).split('/')[-1].split('gpio')[-1])
+        return int(os.path.realpath(shadowdir).split('/')[-1].split('gpio')[-1])
     else:
-        if name.isdigit():
-            num = int(name)
-        else:
-            num = -1
-    return num
+        return int(name) if name.isdigit() else -1
 
 def is_gpio_valid(cs, clk, mosi, miso):
     if cs is -1:
@@ -122,11 +118,7 @@ def read_raw(args):
             print "0x{:02X}".format(val)
 
 def write_raw(args):
-    if args.value[:2] == "0x":
-        value = int(args.value, 16)
-    else:
-        value = int(args.value)
-
+    value = int(args.value, 16) if args.value[:2] == "0x" else int(args.value)
     raw = get_raw(args)
     raw.ewen()
     raw.erase(args.address)

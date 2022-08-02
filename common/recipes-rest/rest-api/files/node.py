@@ -23,15 +23,8 @@
 
 class node:
     def __init__(self, info=None, actions=None):
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         return self.info

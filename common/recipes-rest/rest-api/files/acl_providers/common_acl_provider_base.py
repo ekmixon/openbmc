@@ -99,7 +99,4 @@ class AclProviderBase(metaclass=abc.ABCMeta):
         # e.g. "blah-oob.example.com" -> "blah.example.com"
         hostname = RE_OOB_SUFFIX.sub(r"\g<prefix>", oob_hostname)
 
-        if oob_hostname != hostname:
-            return [hostname]
-
-        return []
+        return [hostname] if oob_hostname != hostname else []

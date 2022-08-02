@@ -43,5 +43,4 @@ def get_fruid(cmd=["weutil"]):
         if len(tdata) < 2:
             continue
         result[tdata[0].strip()] = tdata[1].strip()
-    fresult = {"Information": result, "Actions": [], "Resources": []}
-    return fresult
+    return {"Information": result, "Actions": [], "Resources": []}

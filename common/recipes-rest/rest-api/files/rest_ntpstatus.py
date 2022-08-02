@@ -50,11 +50,11 @@ async def get_ntpq_stats():
 
 
 async def get_ntp_stats():
-    if running_systemd():
-        ntpstats = await fudge_timedatectl_stats()
-    else:
-        ntpstats = await get_ntpq_stats()
-    return ntpstats
+    return (
+        await fudge_timedatectl_stats()
+        if running_systemd()
+        else await get_ntpq_stats()
+    )
 
 
 async def rest_ntp_status_handler(request):

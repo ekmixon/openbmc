@@ -15,10 +15,10 @@ class InfixNode:
         (lhv, lht) = self.lhs.dbgeval(ctx)
         (rhv, rht) = self.rhs.dbgeval(ctx)
         fv = self.op.apply(lhv, rhv)
-        return (fv, "%s %s %s" % (lht, str(self.op), rht))
+        return fv, f"{lht} {str(self.op)} {rht}"
 
     def __str__(self):
-        return str(self.lhs) + " " + str(self.op) + " " + str(self.rhs)
+        return f"{str(self.lhs)} {str(self.op)} {str(self.rhs)}"
 
 
 class ListNode:
@@ -59,10 +59,10 @@ class BindNode:
         (bfv, bdt) = self.bindnode.dbgeval(ctx)
         innerctx[self.name] = bfv
         (ifv, idt) = self.innernode.dbgeval(innerctx)
-        return (ifv, "{}[{}] = {};\n{}".format(self.name, bfv, bdt, idt))
+        return ifv, f"{self.name}[{bfv}] = {bdt};\n{idt}"
 
     def __str__(self):
-        return "{} = {};\n{}".format(self.name, str(self.bindnode), str(self.innernode))
+        return f"{self.name} = {str(self.bindnode)};\n{str(self.innernode)}"
 
 
 class IdentNode:
@@ -74,7 +74,7 @@ class IdentNode:
 
     def dbgeval(self, ctx):
         fv = ctx.get(self.name, None)
-        return (fv, "{}={}".format(self.name, fv))
+        return fv, f"{self.name}={fv}"
 
     def __str__(self):
         return self.name
@@ -109,16 +109,13 @@ class ApplyNode:
         fv = self.op.apply(iv, ctx)
         it = self.inner.inners[iv.index(fv)]
         if isinstance(it, InfixNode):
-            res = it.lhs.name + "+" + it.rhs.name
+            res = f"{it.lhs.name}+{it.rhs.name}"
             it = it.lhs
         else:
             res = it.name
 
-        if it.inner.name == "max":
-            mx = it.inner.mxsr
-        else:
-            mx = it.inner
-        res = res + "(" + str(mx) + ")"
+        mx = it.inner.mxsr if it.inner.name == "max" else it.inner
+        res = f"{res}({str(mx)})"
         kv.kv_set("fscd_driver", res)
         return fv
 
@@ -136,10 +133,10 @@ class ApplyNode:
             (fv, ft) = self.op.dbgapply(iv, ctx)
         else:
             fv = self.op.apply(iv, ctx)
-        return (fv, "{}[{}]({})".format(ft, fv, it))
+        return fv, f"{ft}[{fv}]({it})"
 
     def __str__(self):
-        return self.name + "(" + str(self.inner) + ")"
+        return f"{self.name}({str(self.inner)})"
 
 
 def make_infix_node(ast_node, info, profiles):
@@ -157,19 +154,17 @@ def make_infix_node(ast_node, info, profiles):
         op = Div()
 
     if not op:
-        raise InvalidExpression("Bad infix operator: %s" % (ast_node["op"],))
+        raise InvalidExpression(f'Bad infix operator: {ast_node["op"]}')
     lhs_e = make_eval_node(ast_node["left"], info, profiles)
     rhs_e = make_eval_node(ast_node["right"], info, profiles)
-    node = InfixNode(op, lhs_e, rhs_e)
-    return node
+    return InfixNode(op, lhs_e, rhs_e)
 
 
 def make_apply_node(ast_node, info, profiles):
     name = ast_node["name"]
     inner_e = make_eval_node(ast_node["inner"], info, profiles)
     applies = {"hold": Hold, "max": Max}
-    constructor = applies.get(name)
-    if constructor:
+    if constructor := applies.get(name):
         op = constructor()
     else:
         # check for profile?
@@ -235,14 +230,13 @@ class Hold:
         self.last = None
 
     def dbgapply(self, inp, ctx):
-        return (self.apply(inp), "hold[held={}]".format(self.last))
+        return self.apply(inp), f"hold[held={self.last}]"
 
     def apply(self, inp, ctx):
-        if inp is not None:
-            self.last = inp
-            return inp
-        else:
+        if inp is None:
             return self.last
+        self.last = inp
+        return inp
 
 
 class Max:
@@ -265,8 +259,7 @@ class ApplyProfile:
 
     def apply(self, inp, ctx):
         if inp is not None:
-            out = self.controller.run(inp, ctx)
-            return out
+            return self.controller.run(inp, ctx)
 
 
 class Sum:
@@ -277,7 +270,7 @@ class Sum:
             return in_l + in_r
         if in_l is None and in_r is not None:
             return in_r
-        if in_r is None and in_l is not None:
+        if in_l is not None:
             return in_l
 
     def __str__(self):
@@ -292,7 +285,7 @@ class Sub:
             return in_l - in_r
         if in_l is None and in_r is not None:
             return in_r
-        if in_r is None and in_l is not None:
+        if in_l is not None:
             return in_l
 
     def __str__(self):
@@ -307,7 +300,7 @@ class Mul:
             return in_l * in_r
         if in_l is None and in_r is not None:
             return in_r
-        if in_r is None and in_l is not None:
+        if in_l is not None:
             return in_l
 
     def __str__(self):
@@ -319,13 +312,10 @@ class Div:
 
     def apply(self, in_l, in_r):
         if in_l is not None and in_r is not None:
-            if in_r != 0:
-                return in_l / in_r
-            else:
-                return in_l
+            return in_l / in_r if in_r != 0 else in_l
         if in_l is None and in_r is not None:
             return in_r
-        if in_r is None and in_l is not None:
+        if in_l is not None:
             return in_l
 
     def __str__(self):

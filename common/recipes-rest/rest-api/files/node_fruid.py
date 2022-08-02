@@ -28,18 +28,12 @@ class fruidNode(node):
     def __init__(self, name, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         result = {}
-        cmd = "/usr/local/bin/fruid-util " + self.name
+        cmd = f"/usr/local/bin/fruid-util {self.name}"
         _, stdout, _ = await async_exec(cmd, shell=True)
         sdata = stdout.splitlines()
         for line in sdata:

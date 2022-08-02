@@ -74,7 +74,7 @@ def write_status():
     global status
     if statuspath is None:
         return
-    tmppath = statuspath + "~"
+    tmppath = f"{statuspath}~"
     with open(tmppath, "w") as tfh:
         tfh.write(json.dumps(status))
     os.rename(tmppath, statuspath)
@@ -115,10 +115,10 @@ def rackmon_command(cmd):
         client.send(cmdlen)
         client.send(cmd)
         while True:
-            data = client.recv(1024)
-            if not data:
+            if data := client.recv(1024):
+                replydata.append(data)
+            else:
                 break
-            replydata.append(data)
         client.close()
     return b"".join(replydata)
 
@@ -165,7 +165,7 @@ def modbuscmd(raw_cmd, expected=0, timeout=0):
             raise ModbusTimeout()
         if error == 5:
             raise ModbusCRCFail()
-        bprint("Unknown modbus error: " + str(error))
+        bprint(f"Unknown modbus error: {str(error)}")
         raise ModbusUnknownError()
     return result[2:resp_len]
 
@@ -237,12 +237,8 @@ def do_write(cmd):
         delay = timeout
     # Timeouts specified in the file can be too short, especially when waiting
     # on a flash erase, pad them out
-    if timeout < 45000:
-        timeout = 45000
-    expected = 0
-    if rxsz > 0:
-        # address byte, CRC
-        expected = rxsz + 1 + 2
+    timeout = max(timeout, 45000)
+    expected = rxsz + 1 + 2 if rxsz > 0 else 0
     spent = 0
     addrbyte = struct.pack("B", address)
     mcmd = addrbyte + txdata
@@ -255,17 +251,16 @@ def do_write(cmd):
             spent = t2 - t1
         except ModbusTimeout:
             last_rx = b""
-            bprint("No response from cmd: " + bh(mcmd))
+            bprint(f"No response from cmd: {bh(mcmd)}")
     left = spent - (delay / 1000.0)
-    if len(rxdata) > 0:
-        if rxdata != last_rx:
-            global rx_failed
-            bprint("Expected response: %s, len: %d" % (bh(rxdata), expected))
-            bprint("  Actual response: " + bh(last_rx))
-            bprint(
-                "timeout,spent,left: %d, %d, %d" % (timeout, spent * 1000, left * 1000)
-            )
-            rx_failed = True
+    if len(rxdata) > 0 and rxdata != last_rx:
+        global rx_failed
+        bprint("Expected response: %s, len: %d" % (bh(rxdata), expected))
+        bprint(f"  Actual response: {bh(last_rx)}")
+        bprint(
+            "timeout,spent,left: %d, %d, %d" % (timeout, spent * 1000, left * 1000)
+        )
+        rx_failed = True
     if left > 0:
         time.sleep(left)
 
@@ -338,7 +333,7 @@ def main():
         # be done in rackmond directly.
         # This unfortunately adds over a minute of time to an update, since
         # python is quite slow on the BMC.
-        while len(cmds) > 0:
+        while cmds:
             cmd = cmds.pop(0)
             if (
                 cmds

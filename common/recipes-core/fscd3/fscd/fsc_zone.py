@@ -52,10 +52,10 @@ class SensorAssertCheck(object):
         return self.fail_cnt == self.threshold
 
     def log_fail(self):
-        Logger.warn("%s Fail" % self.name)
+        Logger.warn(f"{self.name} Fail")
 
     def log_recover(self):
-        Logger.warn("%s Recover" % self.name)
+        Logger.warn(f"{self.name} Recover")
 
 
 class M2AssertCheck(SensorAssertCheck):
@@ -63,10 +63,10 @@ class M2AssertCheck(SensorAssertCheck):
         super().__init__(name)
 
     def log_fail(self):
-        Logger.warn("M.2 Device %s Fail" % self.name)
+        Logger.warn(f"M.2 Device {self.name} Fail")
 
     def log_recover(self):
-        Logger.warn("M.2 Device %s Recover" % self.name)
+        Logger.warn(f"M.2 Device {self.name} Recover")
 
 
 class FrontIOTempAssertCheck(SensorAssertCheck):
@@ -75,20 +75,19 @@ class FrontIOTempAssertCheck(SensorAssertCheck):
         self.threshold = 2
 
     def log_fail(self):
-        Logger.warn("Front IO Temp %s Fail" % self.name)
+        Logger.warn(f"Front IO Temp {self.name} Fail")
 
     def log_recover(self):
-        Logger.warn("Front IO Temp %s Recover" % self.name)
+        Logger.warn(f"Front IO Temp {self.name} Recover")
 
 
 class Fan(object):
     def __init__(self, fan_name, pTable):
         try:
             self.fan_num = int(fan_name)
-            if "label" in pTable:
-                self.label = pTable["label"]
-            else:
-                self.label = "Fan %d" % (self.fan_num)
+            self.label = (
+                pTable["label"] if "label" in pTable else "Fan %d" % (self.fan_num)
+            )
 
             if "sysfs" in pTable["read_source"]:
                 if "write_source" in pTable:
@@ -128,10 +127,7 @@ class Fan(object):
                         max_duty_register = pTable["write_source"]["max_duty_register"]
                     else:
                         max_duty_register = 100
-                    if "util" in pTable["write_source"]:
-                        write_type = "util"
-                    else:
-                        write_type = "kv"
+                    write_type = "util" if "util" in pTable["write_source"] else "kv"
                     self.source = FscSensorSourceKv(
                         name=fan_name,
                         read_source=pTable["read_source"]["kv"],
@@ -179,10 +175,7 @@ class Zone:
         self.missing_sensor_assert_retry = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_valid_pre = [0] * len(self.expr_meta["ext_vars"])
         self.sensor_valid_cur = [0] * len(self.expr_meta["ext_vars"])
-        if "get_fan_mode" in dir(fsc_board):
-            self.get_fan_mode = True
-        else:
-            self.get_fan_mode = False
+        self.get_fan_mode = "get_fan_mode" in dir(fsc_board)
         self.sensor_fail_ignore = sensor_fail_ignore
         self.sensor_assert_check = []
 
@@ -204,28 +197,25 @@ class Zone:
                 self.sensor_assert_check.append(SensorAssertCheck(full_name))
 
     def get_set_fan_mode(self, mode, action):
-        fan_mode_path = RECORD_DIR + "fan_mode"
+        fan_mode_path = f"{RECORD_DIR}fan_mode"
         if not os.path.isdir(RECORD_DIR):
             os.mkdir(RECORD_DIR)
         if action in "read":
-            if os.path.isfile(fan_mode_path):
-                with open(fan_mode_path, "r") as f:
-                    mode = f.read(1)
-                return mode
-            else:
+            if not os.path.isfile(fan_mode_path):
                 return fan_mode["normal_mode"]
+            with open(fan_mode_path, "r") as f:
+                mode = f.read(1)
+            return mode
         elif action in "write":
             if os.path.isfile(fan_mode_path):
                 with open(fan_mode_path, "r") as f:
                     mode_tmp = f.read(1)
                 if mode != mode_tmp:
-                    fan_mode_record = open(fan_mode_path, "w")
-                    fan_mode_record.write(str(mode))
-                    fan_mode_record.close()
+                    with open(fan_mode_path, "w") as fan_mode_record:
+                        fan_mode_record.write(str(mode))
             else:
-                fan_mode_record = open(fan_mode_path, "w")
-                fan_mode_record.write(str(mode))
-                fan_mode_record.close()
+                with open(fan_mode_path, "w") as fan_mode_record:
+                    fan_mode_record.write(str(mode))
 
     def run(self, sensors, ctx, ignore_mode):
         outmin = 0

@@ -12,8 +12,8 @@ args = parser.parse_args()
 # Set up paths from arguments.
 install_path = args.install_path[0]
 if not install_path.endswith('/'):
-    install_path = install_path + '/'
-meson_path = args.package_path[0] + '/meson-private/meson_test_setup.dat'
+    install_path = f'{install_path}/'
+meson_path = f'{args.package_path[0]}/meson-private/meson_test_setup.dat'
 
 # Load current meson data.
 with open(meson_path, 'rb') as meson_file:
@@ -24,9 +24,7 @@ with open(meson_path, 'rb') as meson_file:
 #   - Turn off 'is_cross_built'.
 new_obj_data = []
 for o in obj_data:
-    new_paths = []
-    for t in o.fname:
-        new_paths.append(re.sub(r".*/build/", install_path, t))
+    new_paths = [re.sub(r".*/build/", install_path, t) for t in o.fname]
     o.fname = new_paths
     o.is_cross_built = False
     new_obj_data.append(o)

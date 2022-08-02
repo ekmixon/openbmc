@@ -9,9 +9,7 @@ if len(sys.argv) < 2:
     print("USAGE: %s FILE [PLOTFILE]")
     sys.exit(1)
 data_file = sys.argv[1]
-image_file = None
-if len(sys.argv) >= 3:
-    image_file = sys.argv[2].replace(".png", "")
+image_file = sys.argv[2].replace(".png", "") if len(sys.argv) >= 3 else None
 
 
 def plot(values, dest):
@@ -48,10 +46,8 @@ for d in data:
     data_by_col[d[0]].append(d[1])
 
 print("entity,min(ms),median(ms),P90(ms),P99(ms),max(ms)")
-for data_col in data_by_col:
-    row = [data_col]
-    data = data_by_col[data_col]
-    row.append("{:.1f}".format(np.min(data)))
+for data_col, data in data_by_col.items():
+    row = [data_col, "{:.1f}".format(np.min(data))]
     row.append("{:.1f}".format(np.median(data)))
     row.append("{:.1f}".format(np.percentile(data, 90)))
     row.append("{:.1f}".format(np.percentile(data, 99)))

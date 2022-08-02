@@ -17,20 +17,19 @@ def bios_main():
         frulist = pal_get_fru_list()
         for fruname in frulist:
             fru = pal_get_fru_id(fruname)
-            if fru >= 0:
-                if pal_is_slot_server(fru) == True:
-                    print("%s:" % (fruname))
-                    bios_main_fru(fru, command)
+            if fru >= 0 and pal_is_slot_server(fru) == True:
+                print(f"{fruname}:")
+                bios_main_fru(fru, command)
     else:
         fru = pal_get_fru_id(fruname)
         if fru < 0:
-            print("%s is not a known FRU on this platform" % (fruname))
+            print(f"{fruname} is not a known FRU on this platform")
             return
         if pal_is_fru_prsnt(fru) == False:
-            print("%s is not present!" % (fruname))
+            print(f"{fruname} is not present!")
             return
         if pal_is_slot_server(fru) == False:
-            print("%s is not a server" % (fruname))
+            print(f"{fruname} is not a server")
             return
         bios_main_fru(fru, command)
 

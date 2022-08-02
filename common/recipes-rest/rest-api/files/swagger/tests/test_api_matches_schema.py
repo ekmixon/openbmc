@@ -24,8 +24,8 @@ for path in paths:
     if not matches:
         continue
 
-    uri = "/api" + matches.group("path")
-    print("testing endpoint %s... " % uri, end="", flush=True)
+    uri = "/api" + matches["path"]
+    print(f"testing endpoint {uri}... ", end="", flush=True)
     response = requests.get(base_url + uri, verify=False)
 
     try:

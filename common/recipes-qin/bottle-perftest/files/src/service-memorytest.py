@@ -62,12 +62,11 @@ addr_num = args.i  # number of http addresses to be created
 # Here it responds the http get with a timestamp
 for x in range(0, addr_num):
 
-    @bottle.route("/ping" + str(x))
+    @bottle.route(f"/ping{str(x)}")
     def rest_ping():
-        result = "Ping received at " + datetime.datetime.now().strftime(
+        return "Ping received at " + datetime.datetime.now().strftime(
             "%d/%b/%Y %H:%M:%S"
         )
-        return result
 
 
 bottle._stderr = logging.error

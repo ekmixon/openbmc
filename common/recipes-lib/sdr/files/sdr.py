@@ -95,7 +95,7 @@ def sdr_get_sensor_name(fru: int, snr_num: int) -> str:
         ctypes.c_uint8(fru), ctypes.c_uint8(snr_num), ctypes.pointer(c_sensor_name)
     )
     if ret != 0:
-        raise LibSdrError("sdr_get_sensor_name() returned " + str(ret))
+        raise LibSdrError(f"sdr_get_sensor_name() returned {str(ret)}")
 
     return c_sensor_name.value.decode("utf-8")
 
@@ -109,7 +109,7 @@ def sdr_get_sensor_units(fru: int, snr_num: int) -> str:
         ctypes.c_uint8(fru), ctypes.c_uint8(snr_num), ctypes.pointer(c_sensor_units)
     )
     if ret != 0:
-        raise LibSdrError("sdr_get_sensor_units() returned " + str(ret))
+        raise LibSdrError(f"sdr_get_sensor_units() returned {str(ret)}")
 
     return c_sensor_units.value.decode("utf-8")
 
@@ -123,5 +123,5 @@ def sdr_get_sensor_thresh(fru: int, snr_num: int) -> ThreshSensor:
         ctypes.pointer(c_sensor_thresholds),
     )
     if ret != 0:
-        raise LibSdrError("sdr_get_snr_thresh() returned " + str(ret))
+        raise LibSdrError(f"sdr_get_snr_thresh() returned {str(ret)}")
     return c_sensor_thresholds

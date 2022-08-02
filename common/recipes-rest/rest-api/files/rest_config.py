@@ -94,11 +94,11 @@ def load_acl_provider(config: t.Dict) -> common_acl_provider_base.AclProviderBas
     acl_provider = config["acl_provider"].split(".")
     if acl_provider[0] != "acl_providers":
         raise ValueError(
-            "Invalid ACL Provider %s, Please use acl providers from the acl_providers package"
-            % config["acl_provider"]
+            f'Invalid ACL Provider {config["acl_provider"]}, Please use acl providers from the acl_providers package'
         )
+
     mod = importlib.import_module(".".join(acl_provider[:-1]))
     klass = getattr(mod, acl_provider[-1])
     if not issubclass(klass, common_acl_provider_base.AclProviderBase):
-        raise ValueError("%s  is not sublass of AclProviderBase" % repr(klass))
+        raise ValueError(f"{repr(klass)}  is not sublass of AclProviderBase")
     return klass(**config["acl_settings"])

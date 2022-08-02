@@ -52,11 +52,10 @@ def get_endpoints(path: str):
     app = WebApp.instance()
     endpoints = set()
     splitpaths = {}
-    splitpaths = path.split("/")
-    position = len(splitpaths)
     if path in ENDPOINT_CHILDREN:
         endpoints = ENDPOINT_CHILDREN[path]
     else:
+        position = len(path.split("/"))
         for route in app.router.resources():
             rest_route_path = route.url().split("/")
             if len(rest_route_path) > position and path in route.url():
@@ -84,7 +83,7 @@ def dumps_bytestr(obj):
             return o
         except AttributeError:
             pass
-        raise TypeError(repr(o) + " is not JSON serializable")
+        raise TypeError(f"{repr(o)} is not JSON serializable")
 
     # Just call default dumps function, but pass the new default function
     # that is capable of process byte strings.

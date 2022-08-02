@@ -27,8 +27,7 @@ from soc_gpio_table import soc_gpio_table
 
 
 def _get_gpio_table():
-    gpio = openbmc_gpio_table.SocGPIOTable(soc_gpio_table)
-    return gpio
+    return openbmc_gpio_table.SocGPIOTable(soc_gpio_table)
 
 
 def dump_func(args):
@@ -68,21 +67,17 @@ def export_func(args):
 
 
 def set_func(args):
-    openbmc_gpio.gpio_set(
-        args.gpio, args.value, change_direction=False if args.keep else True
-    )
+    openbmc_gpio.gpio_set(args.gpio, args.value, change_direction=not args.keep)
 
 
 def get_func(args):
-    val = openbmc_gpio.gpio_get(
-        args.gpio, change_direction=False if args.keep else True
-    )
+    val = openbmc_gpio.gpio_get(args.gpio, change_direction=not args.keep)
     print("%d" % val)
 
 
 def info_func(args):
     res = openbmc_gpio.gpio_info(args.gpio)
-    print("GPIO info for %s:" % args.gpio)
+    print(f"GPIO info for {args.gpio}:")
     print(
         "Shadow: %s\nDirection: %s\nValue: %s"
         % (res["shadow"], res["direction"], res["value"])

@@ -47,7 +47,7 @@ STAT_KEY = "obmc_dump_stat"
 
 
 def copy(path):
-    print("COPY: " + path)
+    print(f"COPY: {path}")
     dest = DUMP_DIR + path
     pathlib.Path(os.path.dirname(dest)).mkdir(parents=True, exist_ok=True)
     if os.path.isdir(path):
@@ -57,7 +57,7 @@ def copy(path):
 
 
 def wrapper_file(cmd, file_name, data):
-    cmd_file = DUMP_DIR + "/" + file_name + ".txt"
+    cmd_file = f"{DUMP_DIR}/{file_name}.txt"
     with open(cmd_file, "a+") as f:
         f.write("=" * 32 + "\n")
         f.write("COMMAND: " + " ".join(cmd) + "\n")
@@ -94,15 +94,15 @@ def get_persistent_stores():
 def cleanup_persistent_stores(stores, def_yes=False):
     for store in stores:
         path = store[0]
-        dumps = glob.glob(path + "/obmc-dump*.tar.gz")
+        dumps = glob.glob(f"{path}/obmc-dump*.tar.gz")
         for f in dumps:
             if (
                 def_yes is True
-                or input("Remove " + f + " (y/n): ").lower().strip() == "y"
+                or input(f"Remove {f} (y/n): ").lower().strip() == "y"
             ):
-                print("Removing: " + f)
+                print(f"Removing: {f}")
                 os.remove(f)
-                syslog.syslog(syslog.LOG_CRIT, "Previous log " + f + " removed")
+                syslog.syslog(syslog.LOG_CRIT, f"Previous log {f} removed")
 
 
 def obmc_dump_cleanup(def_yes=False):
@@ -126,8 +126,8 @@ def obmc_dump_persist(archive):
         print("Archive size:", sz)
         print("Store available size: ", store_size)
         return archive
-    shutil.move(archive, store + "/")
-    return store + "/" + os.path.basename(archive)
+    shutil.move(archive, f"{store}/")
+    return f"{store}/{os.path.basename(archive)}"
 
 
 def dump_all_gpio_info():
@@ -160,13 +160,13 @@ def obmc_dump():
     # dump GPIO value
     wrapper_file("", "dump-gpio", dump_all_gpio_info())
 
-    with open(DUMP_DIR + "/obmc_dump_errors.txt", "w") as f:
+    with open(f"{DUMP_DIR}/obmc_dump_errors.txt", "w") as f:
         f.write(errors + "\n")
 
     name = os.path.basename(DUMP_DIR)
-    subprocess.check_call(["tar", "-czf", name + ".tar.gz", name], cwd="/tmp")
+    subprocess.check_call(["tar", "-czf", f"{name}.tar.gz", name], cwd="/tmp")
     shutil.rmtree(DUMP_DIR)
-    archive = DUMP_DIR + ".tar.gz"
+    archive = f"{DUMP_DIR}.tar.gz"
     archive = obmc_dump_persist(archive)
     sz = os.path.getsize(archive)
     print("Generated:", archive, "of size", sz)

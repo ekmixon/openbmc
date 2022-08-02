@@ -55,10 +55,9 @@ try:
         # type(logging.Logger) -> None
         try:
             cmd = "[ -x /etc/init.d/syslog ] && /etc/init.d/syslog start"
-            logger.info("Starting to run `{}`.".format(cmd))
+            logger.info(f"Starting to run `{cmd}`.")
             subprocess.check_call(cmd, shell=True)
-            logger.info("Finished running `{}`.".format(cmd))
-        # Some old init scripts are missing --oknodo
+            logger.info(f"Finished running `{cmd}`.")
         except subprocess.CalledProcessError:
             pass
         try:
@@ -112,16 +111,7 @@ except ImportError:
         return logger
 
 
-if False:
-    from typing import List, Optional, Tuple, Union
-
-    from virtualcat import ImageSourcesType
-
-    LogHandlerType = Union[
-        logging.StreamHandler, logging.FileHandler, logging.handlers.SysLogHandler
-    ]
-    LogDetailsType = List[Tuple[LogHandlerType, logging.Formatter]]
-    MTDListType = List[MemoryTechnologyDevice]
+pass
 
 
 def is_openbmc():
@@ -155,9 +145,9 @@ def is_galaxy100():
 def run_verbosely(command, logger):
     # type: (List[str], logging.Logger) -> None
     command_string = " ".join(command)
-    logger.info("Starting to run `{}`.".format(command_string))
+    logger.info(f"Starting to run `{command_string}`.")
     subprocess.check_call(command)
-    logger.info("Finished running `{}`.".format(command_string))
+    logger.info(f"Finished running `{command_string}`.")
 
 
 def run_verbosely_retry(command, logger):
@@ -180,10 +170,16 @@ def get_checksums_args(description):
     # type: (str) -> Tuple[List[str], argparse.Namespace]
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("image", nargs="?")
-    checksum_help = "currently required path to JSON file with dict mapping "
-    checksum_help += "md5sums to image descriptions"
-    append_help = "append unrecognized checksums to those from CHECKSUMS and "
-    append_help += "write the result to this file"
+    checksum_help = (
+        "currently required path to JSON file with dict mapping "
+        + "md5sums to image descriptions"
+    )
+
+    append_help = (
+        "append unrecognized checksums to those from CHECKSUMS and "
+        + "write the result to this file"
+    )
+
     mtd_labels_help = textwrap.dedent(
         """\
     Name of the MTD device to write to (.e.g, "flash0").  If not
@@ -211,11 +207,7 @@ def get_checksums_args(description):
 
     args = parser.parse_args()
 
-    if args.checksums:
-        checksums = json.load(args.checksums).keys()
-    else:
-        checksums = []
-
+    checksums = json.load(args.checksums).keys() if args.checksums else []
     return (checksums, args)
 
 
@@ -227,14 +219,15 @@ def get_healthd_reboot_threshold():
     try:
         with open("/etc/healthd-config.json") as conf:
             d = json.load(conf)
-        for t in d["bmc_mem_utilization"]["threshold"]:
-            if "reboot" in t["action"]:
-                return t["value"]
-        # if no reboot threshold found, returns 100%
-        return 100
-    # If /etc/healthd-config.json does not exist, Python 2 raises plain
-    # IOError. Python 3 raises FileNotFoundError but that's a sub-class of
-    # IOError.
+        return next(
+            (
+                t["value"]
+                for t in d["bmc_mem_utilization"]["threshold"]
+                if "reboot" in t["action"]
+            ),
+            100,
+        )
+
     except IOError:
         return 100
 
@@ -246,7 +239,7 @@ def flush_tmpfs_logs(logger):
 
     for logfile in logfiles:
         if os.path.isfile(logfile):
-            logger.info("Removing `{}`".format(logfile))
+            logger.info(f"Removing `{logfile}`")
             os.remove(logfile)
 
     with open("/var/log/messages", "w") as fd:
@@ -262,7 +255,7 @@ def exec_bunch(commands, logger):
         try:
             run_verbosely(cmd, logger)
         except Exception:
-            logger.error("Running `{}` failed".format(" ".join(cmd)))
+            logger.error(f'Running `{" ".join(cmd)}` failed')
 
 
 def systemd_available(logger):
@@ -285,10 +278,7 @@ def restart_healthd(logger, wait=False, supervisor="sv"):
 
 
 def restart_services(logger):
-    if systemd_available(logger):
-        supervisor = "systemctl"
-    else:
-        supervisor = "sv"
+    supervisor = "systemctl" if systemd_available(logger) else "sv"
     commands = (
         # restart the high memory profile services
         [supervisor, "restart", "restapi"],
@@ -300,7 +290,7 @@ def restart_services(logger):
     try:
         restart_healthd(logger, supervisor=supervisor, wait=False)
     except Exception as e:
-        logger.error("Restarting healthd failed: {}".format(e))
+        logger.error(f"Restarting healthd failed: {e}")
 
 
 def drop_caches(logger):
@@ -325,9 +315,7 @@ def is_vboot():
     """
     Vastly simplified method of detecting if running on vboot system
     """
-    if os.path.isfile("/usr/local/bin/vboot-util"):
-        return True
-    return False
+    return bool(os.path.isfile("/usr/local/bin/vboot-util"))
 
 
 def get_vboot_enforcement():
@@ -383,12 +371,7 @@ def get_mtds():
     all_mtds = []
     full_flash_mtds = []
     for (device, size_in_hex, name) in mtd_info:
-        if (
-            name == "flash"
-            or name == "flash0"
-            or name == "flash1"
-            or name == "Partition_000"
-        ):
+        if name in ["flash", "flash0", "flash1", "Partition_000"]:
             if vboot_support == "none" or (
                 vboot_support == "software-enforce" and (name in ["flash0", "flash1"])
             ):
@@ -487,14 +470,14 @@ def get_kernel_parameters():
 def append_to_kernel_parameters(dry_run, addition, logger):
     # type: (bool, str, logging.Logger) -> None
     before = get_kernel_parameters()
-    logger.info("Kernel parameters before changes: {}".format(before))
+    logger.info(f"Kernel parameters before changes: {before}")
     if "mtdparts" in before:
         logger.info("mtdparts already set in firmware environment.")
     if dry_run:
         logger.info("This is a dry run. Not changing kernel parameters.")
         return
     subprocess.call(["fw_setenv", "bootargs", " ".join([before, addition])])
-    logger.info("Kernel parameters after changes: {}".format(get_kernel_parameters()))
+    logger.info(f"Kernel parameters after changes: {get_kernel_parameters()}")
 
 
 def get_partitions(images, checksums, logger):
@@ -678,7 +661,7 @@ def load_image_meta(full_image, logger):
             )
         )
 
-    logger.info("Try loading image meta from full image %s" % full_image)
+    logger.info(f"Try loading image meta from full image {full_image}")
     len_remain = FBOBMC_IMAGE_META_SIZE
     with open(full_image.file_name, "rb") as fh:
         try:
@@ -689,9 +672,7 @@ def load_image_meta(full_image, logger):
             meta_data_chksum = fh.readline(len_remain)
             meta_md5 = json.loads(meta_data_chksum.strip())["meta_md5"]
         except Exception as e:
-            raise MetaPartitionNotFound(
-                "Error while attempting to load meta: {}".format(repr(e))
-            )
+            raise MetaPartitionNotFound(f"Error while attempting to load meta: {repr(e)}")
 
         if meta_data_md5 != meta_md5:
             raise MetaPartitionCorrupted(
@@ -717,15 +698,15 @@ def load_image_meta(full_image, logger):
             or meta_info["FBOBMC_IMAGE_META_VER"] <= 0
         ):
             raise MetaPartitionVerNotSupport(
-                "Unsupported meta version {}".format(
-                    repr(meta_info["FBOBMC_IMAGE_META_VER"])
-                )
+                f'Unsupported meta version {repr(meta_info["FBOBMC_IMAGE_META_VER"])}'
             )
+
 
         if FBOBMC_PART_INFO_KEY not in meta_info:
             raise MetaPartitionMissingPartInfos(
-                "Required metadata entry '{}' not found".format(FBOBMC_PART_INFO_KEY)
+                f"Required metadata entry '{FBOBMC_PART_INFO_KEY}' not found"
             )
+
 
         meta_info[FBOBMC_PART_INFO_KEY] = tuple(meta_info[FBOBMC_PART_INFO_KEY])
 
@@ -740,7 +721,7 @@ def get_partitions_according_meta(full_image, image_meta, logger):
     with VirtualCat([full_image]) as vc:
         for part_info in image_meta[FBOBMC_PART_INFO_KEY]:
             partition = None
-            if "raw" == part_info["type"]:
+            if part_info["type"] == "raw":
                 partition = ExternalChecksumPartition(
                     part_info["size"],
                     part_info["offset"],
@@ -749,7 +730,7 @@ def get_partitions_according_meta(full_image, image_meta, logger):
                     [part_info["md5"]],
                     logger,
                 )
-            elif "fit" == part_info["type"]:
+            elif part_info["type"] == "fit":
                 partition = DeviceTreePartition(
                     [part_info["size"]],
                     part_info["offset"],
@@ -757,7 +738,7 @@ def get_partitions_according_meta(full_image, image_meta, logger):
                     vc,
                     logger,
                 )
-            elif "data" == part_info["type"] or "meta" == part_info["type"]:
+            elif part_info["type"] in ["data", "meta"]:
                 partition = Partition(
                     part_info["size"],
                     part_info["offset"],
@@ -765,7 +746,7 @@ def get_partitions_according_meta(full_image, image_meta, logger):
                     vc,
                     logger,
                 )
-            elif "mtdonly" == part_info["type"]:
+            elif part_info["type"] == "mtdonly":
                 if hasattr(full_image, "device_name"):
                     partition = Partition(
                         part_info["size"],
@@ -774,7 +755,7 @@ def get_partitions_according_meta(full_image, image_meta, logger):
                         vc,
                         logger,
                     )
-            elif "rom" == part_info["type"]:
+            elif part_info["type"] == "rom":
                 if get_vboot_enforcement() == "hardware-enforce":
                     partition = Partition(
                         part_info["size"],
@@ -793,7 +774,7 @@ def get_partitions_according_meta(full_image, image_meta, logger):
                         logger,
                     )
             else:
-                raise AssertionError("Unknown partition %s " % repr(part_info))
+                raise AssertionError(f"Unknown partition {repr(part_info)} ")
 
             if partition is not None:
                 partitions.append(partition)
@@ -802,7 +783,10 @@ def get_partitions_according_meta(full_image, image_meta, logger):
 
 def get_valid_partitions_according_meta(full_image, image_meta, logger):
     partitions = get_partitions_according_meta(full_image, image_meta, logger)
-    logger.info("checked [%s]" % ", ".join(partition.name for partition in partitions))
+    logger.info(
+        f'checked [{", ".join((partition.name for partition in partitions))}]'
+    )
+
     for partition in partitions:
         if not partition.valid:
             exiting_msg = "Exiting due to invalid {} partition (details above)."
@@ -816,7 +800,7 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
     image_meta = None
     if images_or_mtds == []:
         return []
-    elif 1 == len(images_or_mtds):
+    elif len(images_or_mtds) == 1:
         # image meta based validation only support single full image
         # the case of multiple images_or_mtds, as each is independent partition
         # the legacy code logic can handle
@@ -837,9 +821,7 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
             images_or_mtds[0], image_meta, logger
         )
 
-    logger.info(
-        "Validating partitions in {}.".format(", ".join(map(str, images_or_mtds)))
-    )
+    logger.info(f'Validating partitions in {", ".join(map(str, images_or_mtds))}.')
     with VirtualCat(images_or_mtds) as vc:
         partitions = get_partitions(vc, checksums, logger)
 
@@ -849,9 +831,7 @@ def get_valid_partitions(images_or_mtds, checksums, logger):
     for image_tree in partitions:
         for covered_partition in image_tree.valid_external_partitions:
             covered_partitions.append(covered_partition)
-            logger.info(
-                "{} covered by checksum in {}.".format(covered_partition, image_tree)
-            )
+            logger.info(f"{covered_partition} covered by checksum in {image_tree}.")
 
     # TODO populate valid env partition at build time
     # TODO learn to validate data0 partition
@@ -917,8 +897,9 @@ def other_flasher_running(logger):
     our_cmdline = [
         "/proc/self/cmdline",
         "/proc/thread-self/cmdline",
-        "/proc/{}/cmdline".format(os.getpid()),
+        f"/proc/{os.getpid()}/cmdline",
     ]
+
 
     for cmdline_file in glob("/proc/*/cmdline"):
         if cmdline_file in our_cmdline:
@@ -930,18 +911,17 @@ def other_flasher_running(logger):
                 for parameter in cmdline.read().split(b"\x00"):
                     basename = os.path.basename(parameter)
                     if basename in basenames:
-                        if basename in running_flashers.keys():
+                        if basename in running_flashers:
                             running_flashers[basename] += 1
                         else:
                             running_flashers[basename] = 1
-        # Processes and their respective files in procfs naturally come and go.
         except IOError:
             pass
 
-    if running_flashers == {}:
+    if not running_flashers:
         return False
 
-    message = "{} running.".format(b",".join(running_flashers.keys()).decode())
+    message = f'{b",".join(running_flashers.keys()).decode()} running.'
     logger.error(message)
     return True
 
@@ -975,19 +955,18 @@ def image_file_compatible(image_file, issue_file, logger):
         # we fail closed?
         return True
 
-    current = m.group(1)
+    current = m[1]
 
     p = subprocess.Popen(["strings", "-n30", image_file], stdout=subprocess.PIPE)
     p.wait()
     if p.returncode != 0:
-        logger.warning("Couldn't check the strings of {}".format(image_file))
+        logger.warning(f"Couldn't check the strings of {image_file}")
         return False
 
     rx = re.compile(r"U-Boot \d+\.\d+ (\w+)")
     for ln in p.stdout:
-        m = rx.search(normalize_version(str(ln)))
-        if m:
-            new = m.group(1)
+        if m := rx.search(normalize_version(str(ln))):
+            new = m[1]
             return new == current
 
     logger.warning("No U-Boot version string found! Assuming it's safe to flash")
@@ -997,7 +976,7 @@ def image_file_compatible(image_file, issue_file, logger):
 def flash(attempts, image_file, mtd, logger, flash_name, force=False):
     # type: (int, ImageFile, MemoryTechnologyDevice, logging.Logger, Optional[str], bool) -> None
     if image_file.size > mtd.size:
-        logger.error("{} is too big for {}.".format(image_file, mtd))
+        logger.error(f"{image_file} is too big for {mtd}.")
         sys.exit(1)
 
     if other_flasher_running(logger):
@@ -1006,7 +985,7 @@ def flash(attempts, image_file, mtd, logger, flash_name, force=False):
     image_name = image_file.file_name
 
     if not image_file_compatible(image_name, "/etc/issue", logger):
-        logger.warning("Image {} is not for this platform!".format(image_name))
+        logger.warning(f"Image {image_name} is not for this platform!")
         if not force:
             logger.error("Aborting flash. Use a valid image or run with --force")
             sys.exit(1)
@@ -1016,7 +995,7 @@ def flash(attempts, image_file, mtd, logger, flash_name, force=False):
     # readonly offset from the device and the remaining from the image
     # file and use that for flashcp.
     if mtd.offset > 0:
-        image_name = image_name + ".tmp"
+        image_name = f"{image_name}.tmp"
         with open(image_name, "wb") as out_f:
             with open(mtd.file_name, "rb") as in_f:
                 out_f.write(in_f.read(mtd.offset * 1024))
@@ -1027,7 +1006,7 @@ def flash(attempts, image_file, mtd, logger, flash_name, force=False):
     # TODO only write bytes that have changed
     flash_command = ["flashcp", image_name, mtd.file_name]
     if attempts < 1:
-        flash_command = ["dd", "if={}".format(image_file.file_name), "of=/dev/null"]
+        flash_command = ["dd", f"if={image_file.file_name}", "of=/dev/null"]
         attempts = 1
 
     for attempt in range(attempts):
@@ -1038,9 +1017,7 @@ def flash(attempts, image_file, mtd, logger, flash_name, force=False):
             # Retry the specified amount but even on consecutive failures don't
             # exit yet. Instead let the verification stage after this determine
             # the next steps.
-            logger.warning(
-                "flashcp attempt {} returned {}.".format(attempt, result.returncode)
-            )
+            logger.warning(f"flashcp attempt {attempt} returned {result.returncode}.")
     # Remove temp file.
     if image_file.file_name != image_name:
         os.remove(image_name)
@@ -1057,12 +1034,13 @@ def reboot(dry_run, reason, logger):
 
     logger.info(reason)
 
-    reboot_command = ["shutdown", "-r", "now", "pypartition is {}.".format(reason)]
+    reboot_command = ["shutdown", "-r", "now", f"pypartition is {reason}."]
     if dry_run:
         reboot_command = [
             "wall",
-            "pypartition would be {} if this were not a dry run.".format(reason),
+            f"pypartition would be {reason} if this were not a dry run.",
         ]
+
         logger.info("This is a dry run. Not rebooting.")
     else:
         logger.info("Proceeding with reboot.")

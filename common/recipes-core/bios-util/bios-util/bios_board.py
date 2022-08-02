@@ -51,10 +51,10 @@ class check_bios_util(object):
         if self.bios_support_config == "NULL":
             print("Use default supported config.")
             self.bios_support_config = self.get_bios_support_config(default_config)
-            if self.bios_support_config == "NULL":
-                print("No JSON config can be used. Exit bios-util.")
-                self.valid = False
-                return None
+        if self.bios_support_config == "NULL":
+            print("No JSON config can be used. Exit bios-util.")
+            self.valid = False
+            return None
 
         self.get_config_params()
         self.valid = self.show_bios_util_usage()
@@ -72,32 +72,28 @@ class check_bios_util(object):
         self.boot_order_message = "["
         boot_order_actions = 0
         if self.boot_mode:
-            self.boot_order_message = self.boot_order_message + "--boot_mode"
-            boot_order_actions = boot_order_actions + 1
+            self.boot_order_message += "--boot_mode"
+            boot_order_actions += 1
         if self.clear_cmos:
             if boot_order_actions != 0:
-                self.boot_order_message = self.boot_order_message + " | --clear_CMOS"
+                self.boot_order_message += " | --clear_CMOS"
             else:
-                self.boot_order_message = self.boot_order_message + "--clear_CMOS"
-            boot_order_actions = boot_order_actions + 1
+                self.boot_order_message += "--clear_CMOS"
+            boot_order_actions += 1
         if self.force_boot_bios_setup:
             if boot_order_actions != 0:
-                self.boot_order_message = (
-                    self.boot_order_message + " | --force_boot_BIOS_setup"
-                )
+                self.boot_order_message += " | --force_boot_BIOS_setup"
             else:
-                self.boot_order_message = (
-                    self.boot_order_message + "--force_boot_BIOS_setup"
-                )
-            boot_order_actions = boot_order_actions + 1
+                self.boot_order_message += "--force_boot_BIOS_setup"
+            boot_order_actions += 1
         if self.boot_order:
             if boot_order_actions != 0:
-                self.boot_order_message = self.boot_order_message + " | --boot_order"
+                self.boot_order_message += " | --boot_order"
             else:
-                self.boot_order_message = self.boot_order_message + "--boot_order"
-            boot_order_actions = boot_order_actions + 1
+                self.boot_order_message += "--boot_order"
+            boot_order_actions += 1
 
-        self.boot_order_message = self.boot_order_message + "]"
+        self.boot_order_message += "]"
 
         if self.clear_cmos or self.force_boot_bios_setup:
             if self.boot_mode or self.boot_order:
@@ -116,15 +112,14 @@ class check_bios_util(object):
                     choices=["enable", "disable", "get"],
                     help="Enable or disable or get BIOS boot order",
                 )
-        else:
-            if self.boot_mode or self.boot_order:
-                group.add_argument(
-                    "--boot_order",
-                    dest="command",
-                    action="store",
-                    choices=["set", "get"],
-                    help="Set or get BIOS boot order",
-                )
+        elif self.boot_mode or self.boot_order:
+            group.add_argument(
+                "--boot_order",
+                dest="command",
+                action="store",
+                choices=["set", "get"],
+                help="Set or get BIOS boot order",
+            )
 
         if self.tpm_presence:
             group.add_argument(
@@ -177,9 +172,8 @@ class check_bios_util(object):
         )
         if hasattr(self, args.command):
             return getattr(self, args.command)()
-        else:
-            parser.print_help()
-            return False
+        parser.print_help()
+        return False
 
     def get_bios_support_config(self, bios_support_config):
         config = "NULL"
@@ -187,7 +181,7 @@ class check_bios_util(object):
             with open(bios_support_config, "r") as f:
                 config = json.load(f)
         else:
-            print(bios_support_config + " is missing!")
+            print(f"{bios_support_config} is missing!")
 
         return config
 
@@ -270,8 +264,9 @@ class check_bios_util(object):
             parser = argparse.ArgumentParser(
                 description="Show Set Boot Order usage",
                 allow_abbrev=False,
-                usage=self.bios_usage_message + " [-h] " + msg_set_option,
+                usage=f"{self.bios_usage_message} [-h] {msg_set_option}",
             )
+
 
             group = parser.add_mutually_exclusive_group()
             if self.boot_mode:
@@ -287,8 +282,9 @@ class check_bios_util(object):
                     "--boot_order",
                     nargs=5,
                     metavar="order#",
-                    help="Set BIOS boot order " + repr(boot_order_device),
+                    help=f"Set BIOS boot order {repr(boot_order_device)}",
                 )
+
 
             if len(self.argv) < 5:
                 parser.print_help()
@@ -313,13 +309,12 @@ class check_bios_util(object):
             if len(self.argv) < 5:
                 parser.print_help()
                 return False
-            if self.argv[4].isdigit() == True:
-                if int(self.argv[4]) == 1:
-                    group.add_argument(
-                        "{timeout_in_sec}",
-                        type=int,
-                        help="Set TPM physical presence timout in second",
-                    )
+            if self.argv[4].isdigit() == True and int(self.argv[4]) == 1:
+                group.add_argument(
+                    "{timeout_in_sec}",
+                    type=int,
+                    help="Set TPM physical presence timout in second",
+                )
             args = parser.parse_args(self.argv[4:])
 
         return True
@@ -329,8 +324,9 @@ class check_bios_util(object):
             parser = argparse.ArgumentParser(
                 description="Show Get Boot Order usage",
                 allow_abbrev=False,
-                usage=self.bios_usage_message + " [-h] " + self.boot_order_message,
+                usage=f"{self.bios_usage_message} [-h] {self.boot_order_message}",
             )
+
 
             group = parser.add_mutually_exclusive_group()
             if self.boot_mode:
@@ -382,8 +378,9 @@ class check_bios_util(object):
             parser = argparse.ArgumentParser(
                 description="Show Enable Boot Order usage",
                 allow_abbrev=False,
-                usage=self.bios_usage_message + " [-h] " + self.boot_order_message,
+                usage=f"{self.bios_usage_message} [-h] {self.boot_order_message}",
             )
+
 
             group = parser.add_mutually_exclusive_group()
             if self.clear_cmos:
@@ -407,16 +404,18 @@ class check_bios_util(object):
             parser = argparse.ArgumentParser(
                 description="Show Enable PCIe Port Configuration usage",
                 allow_abbrev=False,
-                usage=self.bios_usage_message + " [-h] " + self.pcie_port_message,
+                usage=f"{self.bios_usage_message} [-h] {self.pcie_port_message}",
             )
 
+
             group = parser.add_mutually_exclusive_group()
-            for i in range(0, len(self.pcie_ports), 1):
+            for i in range(len(self.pcie_ports)):
                 group.add_argument(
-                    "--" + self.pcie_ports[i],
+                    f"--{self.pcie_ports[i]}",
                     action="store_true",
-                    help="Enable the PCIe device of " + self.pcie_ports[i],
+                    help=f"Enable the PCIe device of {self.pcie_ports[i]}",
                 )
+
 
             if len(self.argv) < 5:
                 parser.print_help()
@@ -434,8 +433,9 @@ class check_bios_util(object):
             parser = argparse.ArgumentParser(
                 description="Show Disable Boot Order usage",
                 allow_abbrev=False,
-                usage=self.bios_usage_message + " [-h] " + self.boot_order_message,
+                usage=f"{self.bios_usage_message} [-h] {self.boot_order_message}",
             )
+
 
             group = parser.add_mutually_exclusive_group()
             if self.clear_cmos:
@@ -465,16 +465,18 @@ class check_bios_util(object):
             parser = argparse.ArgumentParser(
                 description="Show Disable PCIe Port Configuration usage",
                 allow_abbrev=False,
-                usage=self.bios_usage_message + " [-h] " + self.pcie_port_message,
+                usage=f"{self.bios_usage_message} [-h] {self.pcie_port_message}",
             )
 
+
             group = parser.add_mutually_exclusive_group()
-            for i in range(0, len(self.pcie_ports), 1):
+            for i in range(len(self.pcie_ports)):
                 group.add_argument(
-                    "--" + self.pcie_ports[i],
+                    f"--{self.pcie_ports[i]}",
                     action="store_true",
-                    help="Disable the PCIe device of " + self.pcie_ports[i],
+                    help=f"Disable the PCIe device of {self.pcie_ports[i]}",
                 )
+
 
             if len(self.argv) < 5:
                 parser.print_help()

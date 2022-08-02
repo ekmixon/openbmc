@@ -118,9 +118,7 @@ class VirtualCat(object):
             # be possible to either seek() backwards, to make it appear as if
             # the read had never happened, or call next_image_if_needed(),
             # prior to raising the exception.
-            raise IOError(
-                "read {} bytes but {} requested".format(bytes_read, requested_size)
-            )
+            raise IOError(f"read {bytes_read} bytes but {requested_size} requested")
         return data
 
     def peek(self):

@@ -40,11 +40,7 @@ class HexFile(object):
         self.ip = ip
 
     def __getitem__(self, val):
-        if isinstance(val, slice):
-            address = val.start
-        else:
-            address = val
-
+        address = val.start if isinstance(val, slice) else val
         for segment in self.segments:
             if address in segment:
                 return segment[val]
@@ -98,18 +94,17 @@ class HexFile(object):
                 raise Exception("Record checksum doesn't match on line %d" % lineno)
 
             if record_type == 0:
-                if byte_count == len(data):
-                    current_address = (address + extended_linear_address + extended_segment_address) & 0xffffffff
-                    have_segment = False
-                    for segment in segments:
-                        if segment.end_address == current_address:
-                            segment.data.extend(data)
-                            have_segment = True
-                            break
-                    if not have_segment:
-                        segments.append(Segment(current_address, data))
-                else:
+                if byte_count != len(data):
                     raise Exception("Data record reported size does not match actual size on line %d" % lineno)
+                current_address = (address + extended_linear_address + extended_segment_address) & 0xffffffff
+                have_segment = False
+                for segment in segments:
+                    if segment.end_address == current_address:
+                        segment.data.extend(data)
+                        have_segment = True
+                        break
+                if not have_segment:
+                    segments.append(Segment(current_address, data))
             elif record_type == 1:
                 end_of_file = True
             elif record_type == 2:
@@ -119,7 +114,7 @@ class HexFile(object):
             elif record_type == 3:
                 if byte_count != 4 or len(data) != 4:
                     raise Exception("Byte count misreported in start segment address record on line %d" % lineno)
-                cs = short(*data[0:2])
+                cs = short(*data[:2])
                 ip = short(*data[2:4])
             elif record_type == 4:
                 if byte_count != 2 or len(data) != 2:
@@ -130,15 +125,21 @@ class HexFile(object):
                     raise Exception("Byte count misreported in start linear address record on line %d" % lineno)
                 eip = long(*data)
             else:
-                raise Exception("Unknown record type: %s" % record_type)
+                raise Exception(f"Unknown record type: {record_type}")
         return HexFile(segments, eip, cs, ip)
 
     def pretty_string(self, stride=16):
         retval = []
         for segment in self.segments:
-            retval.append('Segment @ 0x%08x (%d bytes)' % (segment.start_address, segment.size))
-            retval.append(segment.pretty_string(stride=stride))
-            retval.append('')
+            retval.extend(
+                (
+                    'Segment @ 0x%08x (%d bytes)'
+                    % (segment.start_address, segment.size),
+                    segment.pretty_string(stride=stride),
+                    '',
+                )
+            )
+
         if self.eip is not None:
             retval.append('EIP 0x%x' % self.eip)
         if self.cs is not None:
@@ -156,11 +157,13 @@ class Segment(object):
         self.data = data or []
 
     def pretty_string(self, stride=16):
-        retval = []
         addresses = self.addresses
         ranges = [addresses[i:i+stride] for i in range(0, self.size, stride)]
-        for r in ranges:
-            retval.append('%08x ' % r[0] + ' '.join(['%02x' % self[addr] for addr in r]))
+        retval = [
+            '%08x ' % r[0] + ' '.join(['%02x' % self[addr] for addr in r])
+            for r in ranges
+        ]
+
         return '\n'.join(retval)
 
     def __str__(self):
@@ -181,14 +184,13 @@ class Segment(object):
 
     def __getitem__(self, address):
         if isinstance(address, slice):
-            if address.start not in self or address.stop-1 not in self:
+            if address.start not in self or address.stop - 1 not in self:
                 raise IndexError('Address out of range for this segment')
-            else:
-                d = self.data[address.start-self.start_address:address.stop-self.start_address:address.step]
-                start_address = address.start + self.start_address
-                return Segment(start_address, d)
+            d = self.data[address.start-self.start_address:address.stop-self.start_address:address.step]
+            start_address = address.start + self.start_address
+            return Segment(start_address, d)
         else:
-            if not address in self:
+            if address not in self:
                 raise IndexError("Address 0x%x is not in this segment" % address)
             return self.data[address-self.start_address]
 

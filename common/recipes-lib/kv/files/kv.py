@@ -59,7 +59,7 @@ def _handle_error():
     elif e == errno.EEXIST:
         raise KeyAlreadyExists()
     else:
-        raise KeyOperationFailure("KV operation failed with errno = " + str(e))
+        raise KeyOperationFailure(f"KV operation failed with errno = {str(e)}")
 
 
 def kv_get(key, flags=0, binary=False):
@@ -69,9 +69,7 @@ def kv_get(key, flags=0, binary=False):
     ret = lkv_hndl.kv_get(key_c, value, ctypes.byref(length), ctypes.c_uint(flags))
     if ret != 0:
         _handle_error()
-    if binary:
-        return value[:length.value]
-    return value.value.decode()
+    return value[:length.value] if binary else value.value.decode()
 
 
 def kv_set(key, value, flags=0):

@@ -20,14 +20,13 @@ def get_fqdn_str() -> str:
 
 def get_mac_address(if_name: str) -> str:
     mac_addr = ""
-    mac_path = "/sys/class/net/%s/address" % (if_name)
+    mac_path = f"/sys/class/net/{if_name}/address"
     if os.path.isfile(mac_path):
         mac = open(mac_path).read()
-        mac_addr = mac[0:17].upper()
+        return mac[:17].upper()
     else:
         mac = get_mac()
-        mac_addr = ":".join(("%012X" % mac)[i : i + 2] for i in range(0, 12, 2))
-    return mac_addr
+        return ":".join(("%012X" % mac)[i : i + 2] for i in range(0, 12, 2))
 
 
 def get_ipv4_ip_address(if_name: str) -> str:
@@ -86,9 +85,7 @@ def get_ipv4_gateway() -> str:
         octet = int(octet, 16)
         octet_list.append(str(octet))
 
-    gw_ip = ".".join(octet_list)
-
-    return gw_ip
+    return ".".join(octet_list)
 
 
 async def get_managers(request: str) -> web.Response:

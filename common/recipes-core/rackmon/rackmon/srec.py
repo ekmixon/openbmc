@@ -78,8 +78,9 @@ class Image:
             pos = k.start + len(result)
             section = next((s for s in self.sections if s.contains(pos)), None)
             if not section:
-                next_section = next((s for s in self.sections if s.start > pos), None)
-                if next_section:
+                if next_section := next(
+                    (s for s in self.sections if s.start > pos), None
+                ):
                     fill = min(next_section.start, k.stop) - pos
                     # print("filling region", fill)
                     result.extend(b"\xff" * fill)
@@ -102,10 +103,9 @@ class Image:
                     continue
                 if sr.addr > section.start and sr.addr < section.end:
                     raise Exception("SRec records overlap", sr)
-                else:
-                    sections.append(section)
-                    # print("{:x} bytes @{:x}".format(len(section.data), section.start))
-                    section = None
+                sections.append(section)
+                # print("{:x} bytes @{:x}".format(len(section.data), section.start))
+                section = None
             section = Section(sr.addr)
             section.data.extend(sr.data)
         if section:
@@ -116,7 +116,7 @@ class Image:
         return image
 
     def __str__(self):
-        return "Image<{} sections>".format(len(self.sections))
+        return f"Image<{len(self.sections)} sections>"
 
 
 def parse(path, address_scale=1):
@@ -131,10 +131,10 @@ def parse(path, address_scale=1):
                 if stype == 0:
                     # Header
                     continue
-                if stype in (1, 2, 3):
+                if stype in {1, 2, 3}:
                     # Data record
                     addrlen = 1 + stype
-                    addr = int.from_bytes(rec[0:addrlen], byteorder="big")
+                    addr = int.from_bytes(rec[:addrlen], byteorder="big")
                     addr *= address_scale
                     payload = rec[addrlen:-1]
                     checksum = rec[-1]
@@ -142,4 +142,4 @@ def parse(path, address_scale=1):
                         raise Exception("Bad SREC Checksum")
                     yield SRecord(stype, addr, payload)
                     continue
-                raise Exception("Unhandled record: {}".format(line))
+                raise Exception(f"Unhandled record: {line}")

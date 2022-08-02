@@ -69,7 +69,7 @@ def begin_job(jobdesc):
     (fwfd, fwfilepath) = mkstemp()
     if not os.path.exists(UPDATE_JOB_DIR):
         os.makedirs(UPDATE_JOB_DIR)
-    statusfilepath = os.path.join(UPDATE_JOB_DIR, str(job_id) + ".json")
+    statusfilepath = os.path.join(UPDATE_JOB_DIR, f"{job_id}.json")
     status = {"pid": 0, "state": "fetching"}
     with open(statusfilepath, "wb") as sfh:
         sfh.write(json.dumps(status))

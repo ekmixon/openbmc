@@ -62,9 +62,9 @@ addr_num = args.i  # number of http addresses to be created
 # Here it http gets the url from the service at http://localhost:8047/ping<x>
 for x in range(0, addr_num):
 
-    @bottle.route("/ipc/service" + str(x))
+    @bottle.route(f"/ipc/service{str(x)}")
     def rest_service():
-        return urllib2.urlopen("http://localhost:8047/ping" + str(x)).read()
+        return urllib2.urlopen(f"http://localhost:8047/ping{str(x)}").read()
 
 
 bottle._stderr = logging.error

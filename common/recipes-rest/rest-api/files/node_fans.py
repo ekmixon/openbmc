@@ -8,14 +8,8 @@ class fansNode(node):
     def __init__(self, name=None, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         result = []
@@ -35,10 +29,9 @@ class fansNode(node):
             if (skip_flag) and (kv[0].strip() != "Fan Fail"):
                 continue
 
-            if kv[0].strip() == "FSCD Driver":
-                if len(kv) == 3:
+            if kv[0].strip() == "FSCD Driver" and len(kv) == 3:
                     # Format = FRU:SENSOR_NAME
-                    kv[1] = kv[1].strip() + ":" + kv[2].strip()
+                kv[1] = f"{kv[1].strip()}:{kv[2].strip()}"
 
             # 0: normal, 1: boost, 2: transitional
             if kv[0].strip() == "Fan Mode":
@@ -73,7 +66,7 @@ class fansNode(node):
                 elif kv[1].strip() == "True":
                     kv[1] = " 1"
 
-            result.append(kv[0] + ":" + kv[1])
+            result.append(f"{kv[0]}:{kv[1]}")
         return result
 
 

@@ -30,7 +30,7 @@ def read_gpio_by_name(name: str, chip: str = "aspeed-gpio") -> int:
         gpio.close()
         return int(val)
     except Exception as exc:
-        server_logger.exception("Error getting gpio value %s " % name, exc_info=exc)
+        server_logger.exception(f"Error getting gpio value {name} ", exc_info=exc)
         return None
 
 
@@ -42,8 +42,9 @@ def read_gpio_by_shadow(shadow_name: str) -> int:
         return int(val)
     except Exception as exc:
         server_logger.exception(
-            "Error getting gpio value %s " % shadow_name, exc_info=exc
+            f"Error getting gpio value {shadow_name} ", exc_info=exc
         )
+
         return None
 
 

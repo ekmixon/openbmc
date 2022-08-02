@@ -116,11 +116,7 @@ class TestChassisService(AioHTTPTestCase):
         super().setUp()
 
     def get_fru_name(self, server_name: str) -> str:
-        if server_name == "1":
-            return "spb"  # default to assert single sled frus
-        else:
-            #  if not a single sled fru then return the correct fru_name for assertion
-            return server_name.replace("server", "slot")
+        return "spb" if server_name == "1" else server_name.replace("server", "slot")
 
     @unittest_run_loop
     async def test_get_chassis(self):
@@ -162,29 +158,26 @@ class TestChassisService(AioHTTPTestCase):
                 ]
                 expected_resp = {
                     "@odata.context": "/redfish/v1/$metadata#Chassis.Chassis",
-                    "@odata.id": "/redfish/v1/Chassis/{}".format(server_name),
+                    "@odata.id": f"/redfish/v1/Chassis/{server_name}",
                     "@odata.type": "#Chassis.v1_5_0.Chassis",
                     "Id": "1",
                     "Name": "Computer System Chassis",
                     "ChassisType": "RackMount",
-                    "Manufacturer": "",  # will add input in next diff
-                    "Model": "",  # will add input in next diff
-                    "SerialNumber": "",  # will add input in next diff
+                    "Manufacturer": "",
+                    "Model": "",
+                    "SerialNumber": "",
                     "PowerState": "On",
                     "Status": {"State": "Enabled", "Health": "OK"},
                     "Thermal": {
-                        "@odata.id": "/redfish/v1/Chassis/{}/Thermal".format(
-                            server_name
-                        )
+                        "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal"
                     },
                     "Power": {
-                        "@odata.id": "/redfish/v1/Chassis/{}/Power".format(server_name)
+                        "@odata.id": f"/redfish/v1/Chassis/{server_name}/Power"
                     },
                     "Links": {},
                 }
-                req = await self.client.request(
-                    "GET", "/redfish/v1/Chassis/{}".format(server_name)
-                )
+
+                req = await self.client.request("GET", f"/redfish/v1/Chassis/{server_name}")
                 resp = await req.json()
                 self.maxDiff = None
                 self.assertEqual(resp, expected_resp)
@@ -225,30 +218,24 @@ class TestChassisService(AioHTTPTestCase):
                 expected_resp = {
                     "Redundancy": [
                         {
-                            "@odata.id": "/redfish/v1/Chassis/{}/Thermal#/Redundancy/0".format(  # noqa: B950
-                                server_name
-                            ),
+                            "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal#/Redundancy/0",
                             "MemberId": "0",
                             "Name": "BaseBoard System Fans",
                             "RedundancySet": [
                                 {
-                                    "@odata.id": "/redfish/v1/Chassis/{}/Thermal#/Fans/0".format(  # noqa: B950
-                                        server_name
-                                    )
+                                    "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal#/Fans/0"
                                 }
                             ],
                             "Mode": "N+m",
                             "Status": {"State": "Enabled", "Health": "OK"},
-                        },
+                        }
                     ],
                     "@odata.type": "#Thermal.v1_7_0.Thermal",
-                    "@odata.id": "/redfish/v1/Chassis/{}/Thermal".format(server_name),
+                    "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal",
                     "Id": "Thermal",
                     "Temperatures": [
                         {
-                            "@odata.id": "/redfish/v1/Chassis/{}/Thermal#/Temperatures/0".format(  # noqa: B950
-                                server_name
-                            ),
+                            "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal#/Temperatures/0",
                             "FruName": fru_name,
                             "LowerThresholdNonCritical": 0,
                             "LowerThresholdCritical": 0,
@@ -262,7 +249,7 @@ class TestChassisService(AioHTTPTestCase):
                             "SensorNumber": 129,
                             "LowerThresholdFatal": 0,
                             "Status": {"Health": "OK", "State": "Enabled"},
-                        },
+                        }
                     ],
                     "Fans": [
                         {
@@ -274,24 +261,22 @@ class TestChassisService(AioHTTPTestCase):
                             "Status": {"State": "Enabled", "Health": "OK"},
                             "FruName": fru_name,
                             "PhysicalContext": "Backplane",
-                            "@odata.id": "/redfish/v1/Chassis/{}/Thermal#/Fans/0".format(  # noqa: B950
-                                server_name
-                            ),
+                            "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal#/Fans/0",
                             "LowerThresholdFatal": 0,
                             "Redundancy": [
                                 {
-                                    "@odata.id": "/redfish/v1/Chassis/{}/Thermal#/Redundancy/0".format(  # noqa: B950
-                                        server_name
-                                    )
+                                    "@odata.id": f"/redfish/v1/Chassis/{server_name}/Thermal#/Redundancy/0"
                                 }
                             ],
-                        },
+                        }
                     ],
                     "Name": "Thermal",
                 }
+
                 req = await self.client.request(
-                    "GET", "/redfish/v1/Chassis/{}/Thermal".format(server_name)
+                    "GET", f"/redfish/v1/Chassis/{server_name}/Thermal"
                 )
+
                 resp = await req.json()
                 self.maxDiff = None
                 self.assertEqual(resp, expected_resp)
@@ -321,7 +306,7 @@ class TestChassisService(AioHTTPTestCase):
                 ]
                 expected_resp = {
                     "@odata.context": "/redfish/v1/$metadata#Power.Power",
-                    "@odata.id": "/redfish/v1/Chassis/{}/Power".format(server_name),
+                    "@odata.id": f"/redfish/v1/Chassis/{server_name}/Power",
                     "@odata.type": "#Power.v1_5_0.Power",
                     "Id": "Power",
                     "Name": "Power",
@@ -333,9 +318,7 @@ class TestChassisService(AioHTTPTestCase):
                                     "LimitInWatts": 5.5,
                                 },
                                 "PhysicalContext": "Chassis",
-                                "@odata.id": "/redfish/v1/Chassis/{}/Power#/PowerControl/0".format(  # noqa: B950
-                                    server_name
-                                ),
+                                "@odata.id": f"/redfish/v1/Chassis/{server_name}/Power#/PowerControl/0",
                                 "FruName": fru_name,
                                 "SensorNumber": 224,
                                 "Name": "SP_P5V",
@@ -347,12 +330,14 @@ class TestChassisService(AioHTTPTestCase):
                                 },
                                 "MemberId": 0,
                             }
-                        ],
+                        ]
                     ],
                 }
+
                 req = await self.client.request(
-                    "GET", "/redfish/v1/Chassis/{}/Power".format(server_name)
+                    "GET", f"/redfish/v1/Chassis/{server_name}/Power"
                 )
+
                 resp = await req.json()
                 self.maxDiff = None
                 self.assertEqual(resp, expected_resp)

@@ -64,12 +64,11 @@ def permissions_required(request, permissions: t.List[str], context=None) -> boo
     identity = _extract_identity(request)
     if request.app["acl_provider"].is_authorized(identity, permissions):
         return True
-    else:
-        server_logger.info(
-            "AUTH:Failed to authorize %s for endpoint [%s]%s . Required permissions :%s"
-            % (identity, request.method, request.path, str(permissions))
-        )
-        raise HTTPForbidden()
+    server_logger.info(
+        f"AUTH:Failed to authorize {identity} for endpoint [{request.method}]{request.path} . Required permissions :{str(permissions)}"
+    )
+
+    raise HTTPForbidden()
 
 
 def _validate_cert_date(request) -> bool:
@@ -78,18 +77,18 @@ def _validate_cert_date(request) -> bool:
     peercert = request.transport.get_extra_info("peercert")
     if not peercert:
         server_logger.info(
-            "AUTH:Client did not send client certificates for request [%s]%s"
-            % (request.method, request.path)
+            f"AUTH:Client did not send client certificates for request [{request.method}]{request.path}"
         )
+
         return False
     cert_valid = (
         datetime.datetime.strptime(peercert["notAfter"], "%b %d %H:%M:%S %Y %Z") > now()
     )
     if not cert_valid:
         server_logger.info(
-            "AUTH:Client sent client certificates for request [%s]%s, but it expired at: %s"
-            % (request.method, request.path, peercert["notAfter"])
+            f'AUTH:Client sent client certificates for request [{request.method}]{request.path}, but it expired at: {peercert["notAfter"]}'
         )
+
         return False
     return True
 

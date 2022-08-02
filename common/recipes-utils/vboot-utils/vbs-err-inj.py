@@ -228,13 +228,10 @@ def crc16(data: bytearray, offset, length):
     ):
         return 0
     crc = 0
-    for i in range(0, length):
+    for i in range(length):
         crc ^= data[offset + i] << 8
-        for _ in range(0, 8):
-            if (crc & 0x8000) > 0:
-                crc = (crc << 1) ^ 0x1021
-            else:
-                crc = crc << 1
+        for _ in range(8):
+            crc = (crc << 1) ^ 0x1021 if (crc & 0x8000) > 0 else crc << 1
     return crc & 0xFFFF
 
 
@@ -281,8 +278,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s-v{}".format(VBS_ERROR_INJECTION_VERSION),
+        version=f"%(prog)s-v{VBS_ERROR_INJECTION_VERSION}",
     )
+
 
     parser.add_argument(
         "errcode",
@@ -312,6 +310,6 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception as e:
-        print("Exception: %s" % (str(e)))
+        print(f"Exception: {str(e)}")
         traceback.print_exc()
         sys.exit(EC_EXCEPTION)

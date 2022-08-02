@@ -30,8 +30,8 @@ WEDGE40 = ["Wedge-DC-F", "Wedge-AC-F"]
 
 
 def read_wedge_back_ports(legacy=False):
-    if legacy:
-        bhinfo = {
+    return (
+        {
             "port_1": {
                 "pin_1": read_gpio_by_shadow("BLOODHOUND_GPIOP0"),
                 "pin_2": read_gpio_by_shadow("BLOODHOUND_GPIOP1"),
@@ -43,8 +43,8 @@ def read_wedge_back_ports(legacy=False):
                 "pin_2": read_gpio_by_shadow("BLOODHOUND_GPIOP5"),
             },
         }
-    else:
-        bhinfo = {
+        if legacy
+        else {
             "port_1": {
                 "pin_1": read_gpio_by_shadow("RMON1_PF"),
                 "pin_2": read_gpio_by_shadow("RMON1_RF"),
@@ -56,7 +56,7 @@ def read_wedge_back_ports(legacy=False):
                 "pin_2": read_gpio_by_shadow("RMON3_RF"),
             },
         }
-    return bhinfo
+    )
 
 
 @functools.lru_cache(maxsize=1)
@@ -77,6 +77,4 @@ def _check_wedge() -> t.Tuple[bool, bool]:
 
 def get_gpios():
     is_wedge, is_wedge40 = _check_wedge()
-    if is_wedge:
-        return {"back_ports": read_wedge_back_ports(is_wedge40)}
-    return {}
+    return {"back_ports": read_wedge_back_ports(is_wedge40)} if is_wedge else {}

@@ -263,19 +263,19 @@ class TestSystem(unittest.TestCase):
             mocked_check_call.reset_mock()
             system.fuser_k_mount_ro(writeable_mounted_mtds, self.logger)
             mocked_check_call.assert_has_calls(calls)
-            writeable_mounted_mtds.append(
-                ("/dev/mtdblock{}".format(i), "/mnt/foo{}".format(i))
-            )
-            calls.append(call(["fuser", "-km", "/mnt/foo{}".format(i)]))
-            calls.append(
-                call(
-                    [
-                        "mount",
-                        "-o",
-                        "remount,ro",
-                        "/dev/mtdblock{}".format(i),
-                        "/mnt/foo{}".format(i),
-                    ]
+            writeable_mounted_mtds.append((f"/dev/mtdblock{i}", f"/mnt/foo{i}"))
+            calls.extend(
+                (
+                    call(["fuser", "-km", f"/mnt/foo{i}"]),
+                    call(
+                        [
+                            "mount",
+                            "-o",
+                            "remount,ro",
+                            f"/dev/mtdblock{i}",
+                            f"/mnt/foo{i}",
+                        ]
+                    ),
                 )
             )
 
@@ -352,8 +352,9 @@ class TestSystem(unittest.TestCase):
         ]
         # Return the full list of /proc/$pid/cmdline from a single glob() call
         mocked_glob.return_value = [
-            "/proc/{}/cmdline".format(200 + i) for i in range(len(read_data))
+            f"/proc/{200 + i}/cmdline" for i in range(len(read_data))
         ]
+
         # Return just one cmdline from each open().read()
         mocked_open.side_effect = [
             mock_open(read_data=datum).return_value for datum in read_data

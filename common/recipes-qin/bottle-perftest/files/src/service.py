@@ -52,8 +52,9 @@ LOGGER_CONF = {
 # Here it responds the http get with a timestamp
 @bottle.route("/ping")
 def rest_ping():
-    result = "Ping received at " + datetime.datetime.now().strftime("%d/%b/%Y %H:%M:%S")
-    return result
+    return "Ping received at " + datetime.datetime.now().strftime(
+        "%d/%b/%Y %H:%M:%S"
+    )
 
 
 bottle._stderr = logging.error

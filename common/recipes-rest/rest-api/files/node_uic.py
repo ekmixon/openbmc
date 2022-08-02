@@ -6,6 +6,6 @@ from rest_pal_legacy import *
 
 def get_node_uic():
     name = pal_get_platform_name()
-    info = {"Description": name + " User Interface Card"}
+    info = {"Description": f"{name} User Interface Card"}
 
     return node(info)

@@ -40,10 +40,9 @@ def get_sensors():
     data = re.sub("\(.+?\)", "", data)
     for edata in data.split("\n\n"):
         adata = edata.split("\n", 1)
-        sresult = {}
         if len(adata) < 2:
             break
-        sresult["name"] = adata[0]
+        sresult = {"name": adata[0]}
         for sdata in adata[1].split("\n"):
             tdata = sdata.split(":")
             if len(tdata) < 2:
@@ -51,8 +50,7 @@ def get_sensors():
             sresult[tdata[0].strip()] = tdata[1].strip()
         result.append(sresult)
 
-    fresult = {"Information": result, "Actions": [], "Resources": []}
-    return fresult
+    return {"Information": result, "Actions": [], "Resources": []}
 
 
 # Handler for sensors-full resource endpoint
@@ -98,15 +96,13 @@ def get_sensors_full():
             pos += 1
             continue
 
-        sresult = {}
-
         # match the first two lines of a section
         m = name_adapter_re.match(data, pos)
         if not m:
             # bad input, skip a line and try again
             pos = skipline_re.match(data, pos).end()
             continue
-        sresult["name"] = m.group(1)
+        sresult = {"name": m.group(1)}
         sresult["adapter"] = m.group(2)
         pos = m.end()
 
@@ -128,10 +124,9 @@ def get_sensors_full():
                 values[m.group(1)] = m.group(2)
                 pos = m.end()
 
-            if len(values) > 0:
+            if values:
                 sresult[label] = values
 
         result.append(sresult)
 
-    fresult = {"Information": result, "Actions": [], "Resources": []}
-    return fresult
+    return {"Information": result, "Actions": [], "Resources": []}

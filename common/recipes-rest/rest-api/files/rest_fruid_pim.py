@@ -50,10 +50,11 @@ def get_fruid(cmd=["weutil"]):
     # Then, for Minipack, also add PIM info
     pim_type, pim_fpga_ver = prepare_piminfo()
     for pim_number in range(1, 9):
-        subsection = {}
-        subsection["type"] = pim_type[str(pim_number)]
-        subsection["FPGA version"] = pim_fpga_ver[str(pim_number)]
-        result["pim" + str(pim_number)] = subsection
+        subsection = {
+            "type": pim_type[str(pim_number)],
+            "FPGA version": pim_fpga_ver[str(pim_number)],
+        }
 
-    fresult = {"Information": result, "Actions": [], "Resources": []}
-    return fresult
+        result[f"pim{str(pim_number)}"] = subsection
+
+    return {"Information": result, "Actions": [], "Resources": []}

@@ -15,14 +15,8 @@ class enclosure_error_Node(node):
     def __init__(self, name=None, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         result = {}
@@ -46,14 +40,8 @@ class enclosure_flash_health_Node(node):
     def __init__(self, name=None, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         result = {}
@@ -77,14 +65,8 @@ class enclosure_flash_status_Node(node):
     def __init__(self, name=None, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         info = {}
@@ -107,14 +89,8 @@ class enclosure_hdd_status_Node(node):
     def __init__(self, name=None, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         result = {}

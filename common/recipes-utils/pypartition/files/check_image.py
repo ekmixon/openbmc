@@ -45,7 +45,7 @@ class V6TCPServer(socketserver.TCPServer):
 def check_image(logger):
     # type: (logging.Logger) -> None
     if system.is_openbmc():
-        logger.warning("Running {} from an OpenBMC is untested.".format(sys.argv[0]))
+        logger.warning(f"Running {sys.argv[0]} from an OpenBMC is untested.")
 
     description = textwrap.dedent(
         """\
@@ -69,18 +69,17 @@ def check_image(logger):
         checksums = []
         [checksums.extend(p.checksums) for p in partitions if hasattr(p, "checksums")]
         logger.info(
-            "Writing appended checksum list to {}.".format(
-                args.append_new_checksums.name
-            )
+            f"Writing appended checksum list to {args.append_new_checksums.name}."
         )
+
         json.dump({checksum: "" for checksum in checksums}, args.append_new_checksums)
 
     if args.serve:
         directory = os.path.dirname(args.image)
-        logger.info("Changing directory to {}.".format(directory))
+        logger.info(f"Changing directory to {directory}.")
         os.chdir(directory)
         Handler = http_server.SimpleHTTPRequestHandler
-        logger.info("Serving HTTP on port {}".format(args.port))
+        logger.info(f"Serving HTTP on port {args.port}")
         httpd = V6TCPServer(("::", args.port), Handler)
         httpd.serve_forever()
 

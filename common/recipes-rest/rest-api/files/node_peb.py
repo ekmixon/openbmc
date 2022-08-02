@@ -9,14 +9,8 @@ from rest_pal_legacy import pal_get_platform_name
 class pebNode(node):
     def __init__(self, name=None, info=None, actions=None):
         self.name = pal_get_platform_name()
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         name = pal_get_platform_name()
@@ -34,36 +28,26 @@ class pebNode(node):
         data = kv_get("system_identify", 1)
         identify_status = data.strip("\n")
 
-        info = {
-            "Description": name + " PCIe Expansion Board",
+        return {
+            "Description": f"{name} PCIe Expansion Board",
             "Tray Location": location,
             "Tray Status": status,
             "Status of identify LED": identify_status,
         }
 
-        return info
-
     async def doAction(self, data, param={}):
         if data["action"] == "identify-on":
             cmd = "/usr/bin/fpc-util --identify on"
             _, data, _ = await async_exec(cmd, shell=True)
-            if data.startswith("Usage"):
-                res = "failure"
-            else:
-                res = "success"
+            res = "failure" if data.startswith("Usage") else "success"
         elif data["action"] == "identify-off":
             cmd = "/usr/bin/fpc-util --identify off"
             _, data, _ = await async_exec(cmd, shell=True)
-            if data.startswith("Usage"):
-                res = "failure"
-            else:
-                res = "success"
+            res = "failure" if data.startswith("Usage") else "success"
         else:
             res = "not support this action"
 
-        result = {"result": res}
-
-        return result
+        return {"result": res}
 
 
 def get_node_peb():

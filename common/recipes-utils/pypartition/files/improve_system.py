@@ -49,15 +49,12 @@ def fix_wedge100_romcs1():
 
 
 def _unmount_mnt_data():
-    # If /mnt/data is mounted, try to unmount it as safely as possible
-    m = re.search(
+    if m := re.search(
         "^(?P<device>[^ ]+) /mnt/data [^ ]+ [^ ]+ [0-9]+ [0-9]+$",
         open("/proc/mounts").read(),
         flags=re.MULTILINE,
-    )
-
-    if m:
-        device = m.group("device")
+    ):
+        device = m["device"]
         logger.info("/mnt/data is mounted, attempting to unmount ...")
 
         logger.info("Bind mount /mnt to /tmp/mnt")
@@ -106,7 +103,6 @@ def fix_galaxy100_mnt_data_partition(all_mtds):
     Galaxy has LCs(line cards) and FABs(fabric cards)
     TODO: Remove logic after next galaxy card upgrade
     """
-    diag_paths = ["/mnt/data/Diag_FAB", "/mnt/data/Diag_LC"]
     data0_partition = None
 
     if not system.is_galaxy100():
@@ -122,13 +118,13 @@ def fix_galaxy100_mnt_data_partition(all_mtds):
             break
 
     if data0_partition is not None:
+        diag_paths = ["/mnt/data/Diag_FAB", "/mnt/data/Diag_LC"]
         for path in diag_paths:
             if os.path.isdir(path):
                 logger.info(
-                    "Galaxy100 card with {} present, erase data partition {}".format(
-                        path, data0_partition
-                    )
+                    f"Galaxy100 card with {path} present, erase data partition {data0_partition}"
                 )
+
                 cmd = ["flash_eraseall", "-j", data0_partition]
                 system.run_verbosely(cmd, logger)
                 return
@@ -156,20 +152,18 @@ def get_downloaded_image_size(logger, image):
     try:
         img_stat = os.stat(image)
         img_size_kb = int(img_stat.st_size / 1024)
-        logger.info("Image size {} Kb".format(img_size_kb))
+        logger.info(f"Image size {img_size_kb} Kb")
         return img_size_kb
     except FileNotFoundError:
         # this is weird, but let's leave it to "normal" pypartition flow
-        logger.error(
-            "File {} not found, can not calculate real minimum memory".format(image)
-        )
+        logger.error(f"File {image} not found, can not calculate real minimum memory")
         return 0
 
 
 def improve_system(logger):
     # type: (object) -> None
     if not system.is_openbmc():
-        logger.error("{} must be run from an OpenBMC system.".format(sys.argv[0]))
+        logger.error(f"{sys.argv[0]} must be run from an OpenBMC system.")
         sys.exit(1)
 
     description = textwrap.dedent(
@@ -196,20 +190,18 @@ def improve_system(logger):
 
     [total_memory_kb, free_memory_kb] = system.get_mem_info()
     logger.info(
-        "{} KiB total memory, {} KiB free memory.".format(
-            total_memory_kb, free_memory_kb
-        )
+        f"{total_memory_kb} KiB total memory, {free_memory_kb} KiB free memory."
     )
+
 
     # Execute light weight free memory remediation to reduce reboot remediation
     free_mem_remediation(logger)
 
     [total_memory_kb, free_memory_kb] = system.get_mem_info()
     logger.info(
-        "After free memory remediation: {} KiB total memory, {} KiB free memory.".format(
-            total_memory_kb, free_memory_kb
-        )
+        f"After free memory remediation: {total_memory_kb} KiB total memory, {free_memory_kb} KiB free memory."
     )
+
     reboot_threshold_pct = system.get_healthd_reboot_threshold()
     reboot_threshold_kb = ((100 - reboot_threshold_pct) / 100) * total_memory_kb
 
@@ -226,22 +218,20 @@ def improve_system(logger):
         default_threshold, openbmc_img_size_kb + reboot_threshold_kb
     )
     logger.info(
-        "Healthd reboot threshold at {}%  ({} KiB)".format(
-            reboot_threshold_pct, reboot_threshold_kb
-        )
+        f"Healthd reboot threshold at {reboot_threshold_pct}%  ({reboot_threshold_kb} KiB)"
     )
+
 
     # we need to take into account a case when image is already downloaded and
     # subtract its size from `min_memory_needed`
     min_memory_needed -= get_downloaded_image_size(logger, args.image)
 
-    logger.info("Minimum memory needed for update is {} KiB".format(min_memory_needed))
+    logger.info(f"Minimum memory needed for update is {min_memory_needed} KiB")
     if free_memory_kb < min_memory_needed:
         logger.info(
-            "Free memory ({} KiB) < minimum required memory ({} KiB), reboot needed".format(
-                free_memory_kb, min_memory_needed
-            )
+            f"Free memory ({free_memory_kb} KiB) < minimum required memory ({min_memory_needed} KiB), reboot needed"
         )
+
         if full_flash_mtds != []:
             [
                 system.get_valid_partitions([full_flash], checksums, logger)
@@ -253,9 +243,7 @@ def improve_system(logger):
 
     if full_flash_mtds == []:
         partitions = system.get_valid_partitions(all_mtds, checksums, logger)
-        mtdparts = "mtdparts={}:{},-@0(flash0)".format(
-            "spi0.0", ",".join(map(str, partitions))
-        )
+        mtdparts = f'mtdparts=spi0.0:{",".join(map(str, partitions))},-@0(flash0)'
         system.append_to_kernel_parameters(args.dry_run, mtdparts, logger)
         system.reboot(args.dry_run, "changing kernel parameters", logger)
 
@@ -303,7 +291,7 @@ def improve_system(logger):
             ]
 
         if not full_flash_mtds:
-            raise ValueError("No device with label {}".format(args.mtd_labels))
+            raise ValueError(f"No device with label {args.mtd_labels}")
 
         for mtd in full_flash_mtds:
             system.flash(attempts, image_file, mtd, logger, args.mtd_labels, args.force)

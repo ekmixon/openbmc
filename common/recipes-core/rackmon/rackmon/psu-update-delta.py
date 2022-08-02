@@ -53,7 +53,7 @@ def write_status():
     global status
     if statuspath is None:
         return
-    tmppath = statuspath + "~"
+    tmppath = f"{statuspath}~"
     with open(tmppath, "w") as tfh:
         tfh.write(json.dumps(status))
     os.rename(tmppath, statuspath)
@@ -91,10 +91,10 @@ def rackmon_command(cmd):
         client.send(cmdlen)
         client.send(cmd)
         while True:
-            data = client.recv(1024)
-            if not data:
+            if data := client.recv(1024):
+                replydata.append(data)
+            else:
                 break
-            replydata.append(data)
         client.close()
     return b"".join(replydata)
 
@@ -131,7 +131,7 @@ def tprint(s):
 
 
 def modbuscmd(raw_cmd, expected=0, timeout=0):
-    tprint("-> {}".format(bh(raw_cmd)))
+    tprint(f"-> {bh(raw_cmd)}")
     COMMAND_TYPE_RAW_MODBUS = 1
     send_command = (
         struct.pack("@HxxHHL", COMMAND_TYPE_RAW_MODBUS, len(raw_cmd), expected, timeout)
@@ -149,9 +149,9 @@ def modbuscmd(raw_cmd, expected=0, timeout=0):
         if error == 5:
             tprint("<- crc check failure")
             raise ModbusCRCFail()
-        print("Unknown modbus error: " + str(error))
+        print(f"Unknown modbus error: {str(error)}")
         raise ModbusUnknownError()
-    tprint("<- {}".format(bh(result[2:])))
+    tprint(f"<- {bh(result[2:])}")
     return result[2:resp_len]
 
 
@@ -172,7 +172,6 @@ def enter_bootloader(addr):
         mei_command(addr, 0xFB, timeout=4000)
     except ModbusTimeout:
         print("Enter bootloader timed out (expected.)")
-        pass
 
 
 def mei_expect(response, addr, data_pfx, error, success_mei_type=0x71):
@@ -182,7 +181,7 @@ def mei_expect(response, addr, data_pfx, error, success_mei_type=0x71):
         + (b"\xFF" * (8 - len(data_pfx)))
     )
     if response != expected:
-        print(error + ", response: " + bh(response))
+        print(f"{error}, response: {bh(response)}")
         raise BadMEIResponse()
 
 
@@ -198,10 +197,10 @@ def get_challenge(addr):
     response = mei_command(addr, 0x27, timeout=3000)
     expected = struct.pack("BBBB", addr, 0x2B, 0x71, 0x67)
     if response[: len(expected)] != expected:
-        print("Bad response to get seed: " + bh(response))
+        print(f"Bad response to get seed: {bh(response)}")
         raise BadMEIResponse()
     challenge = response[len(expected) : len(expected) + 4]
-    print("Got seed: " + bh(challenge))
+    print(f"Got seed: {bh(challenge)}")
     return challenge
 
 
@@ -258,18 +257,18 @@ def write_data(addr, data):
         return
     expected = struct.pack(">B", addr) + b"\x2b\x73\xf0\xaa\xff\xff\xff\xff\xff\xff"
     if response != expected:
-        print("Bad response to writing data: " + bh(response))
+        print(f"Bad response to writing data: {bh(response)}")
         raise BadMEIResponse()
 
 
 def send_image(addr, fwimg):
     global statuspath
-    total_chunks = sum([len(s) for s in fwimg.segments]) / 8
+    total_chunks = sum(len(s) for s in fwimg.segments) / 8
     sent_chunks = 0
     for s in fwimg.segments:
         if len(s) == 0:
             continue
-        print("Sending " + str(s))
+        print(f"Sending {str(s)}")
         set_write_address(addr, s.start_address)
         for i in range(0, len(s), 8):
             chunk = s.data[i : i + 8]
@@ -299,7 +298,7 @@ def reset_psu(addr):
         return
     expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xB2) + (b"\xFF" * 7)
     if response != expected:
-        print("Bad response to unit reset request: " + bh(response))
+        print(f"Bad response to unit reset request: {bh(response)}")
         raise BadMEIResponse()
 
 
@@ -309,7 +308,7 @@ def erase_flash(addr):
     response = mei_command(addr, 0x65, timeout=30000)
     expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xA5) + (b"\xFF" * 7)
     if response != expected:
-        print("Bad response to erasing flash: " + bh(response))
+        print(f"Bad response to erasing flash: {bh(response)}")
         raise BadMEIResponse()
 
 
@@ -347,7 +346,7 @@ def main():
         statuspath = args.statusfile
         if args.transcript:
             transcript_file = stack.enter_context(open("modbus-transcript.log", "w"))
-        print("statusfile %s" % statuspath)
+        print(f"statusfile {statuspath}")
         try:
             update_psu(args.addr, args.file)
         except Exception as e:

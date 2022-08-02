@@ -46,19 +46,9 @@ class serverPower:
 class serverNode(node):
     def __init__(self, num=None, fru_name=None, info=None, actions=None):
         self.num = num
-        if fru_name is None:
-            self.fru_name = "slot" + str(num)
-        else:
-            self.fru_name = fru_name
-
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.fru_name = f"slot{str(num)}" if fru_name is None else fru_name
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         ret = pal_get_server_power(self.num)
@@ -72,21 +62,20 @@ class serverNode(node):
             status = "error"
 
         bic_status = pal_get_bic_status(self.num)
-        if bic_status == PAL_STATUS_UNSUPPORTED:
-            info = {"Power status": status}
-        else:
-            info = {"Power status": status, "BIC_ok": bic_status}
-
-        return info
+        return (
+            {"Power status": status}
+            if bic_status == PAL_STATUS_UNSUPPORTED
+            else {"Power status": status, "BIC_ok": bic_status}
+        )
 
     async def doAction(self, data, param={}):
         ret = pal_server_action(self.num, data["action"], self.fru_name)
-        if ret == -2:
+        if ret == -1:
+            res = "failure"
+        elif ret == -2:
             res = "Should not execute power on/off/graceful_shutdown/cycle/reset on device card"
             result = {"Warning": res}
             return result
-        elif ret == -1:
-            res = "failure"
         else:
             res = "success"
         result = {"result": res}

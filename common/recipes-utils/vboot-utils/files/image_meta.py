@@ -160,7 +160,7 @@ class FBOBMCImageMeta:
         self.meta = self._load_image_meta()
 
     def _load_image_meta(self):
-        self.logger.info("Try loading image meta from %s" % self.image)
+        self.logger.info(f"Try loading image meta from {self.image}")
         len_remain = self.FBOBMC_IMAGE_META_SIZE
         with open(self.image, "rb") as fh:
             try:
@@ -171,15 +171,13 @@ class FBOBMCImageMeta:
                 meta_data_chksum = fh.readline(len_remain)
                 meta_md5 = json.loads(meta_data_chksum.strip())["meta_md5"]
             except Exception as e:
-                raise MetaPartitionNotFound(
-                    "Error while attempting to load meta: {}".format(repr(e))
-                )
+                raise MetaPartitionNotFound(f"Error while attempting to load meta: {repr(e)}")
 
             if meta_data_md5 != meta_md5:
                 raise MetaPartitionCorrupted(
-                    "Meta partition md5 %s does not match expected %s"
-                    % (meta_data_md5, meta_md5)
+                    f"Meta partition md5 {meta_data_md5} does not match expected {meta_md5}"
                 )
+
 
             meta_info = json.loads(meta_data.strip())
             self.logger.info(
@@ -198,17 +196,15 @@ class FBOBMCImageMeta:
                 or meta_info["FBOBMC_IMAGE_META_VER"] <= 0
             ):
                 raise MetaPartitionVerNotSupport(
-                    "Unsupported meta version {}".format(
-                        repr(meta_info["FBOBMC_IMAGE_META_VER"])
-                    )
+                    f'Unsupported meta version {repr(meta_info["FBOBMC_IMAGE_META_VER"])}'
                 )
+
 
             if self.FBOBMC_PART_INFO_KEY not in meta_info:
                 raise MetaPartitionMissingPartInfos(
-                    "Required metadata entry '{}' not found".format(
-                        self.FBOBMC_PART_INFO_KEY
-                    )
+                    f"Required metadata entry '{self.FBOBMC_PART_INFO_KEY}' not found"
                 )
+
 
             meta_info[self.FBOBMC_PART_INFO_KEY] = tuple(
                 meta_info[self.FBOBMC_PART_INFO_KEY]
@@ -221,12 +217,11 @@ class FBOBMCImageMeta:
             if part_name == part_info["name"]:
                 return part_info
 
-        raise PartitionNotFound("partion {} not found".format(part_name))
+        raise PartitionNotFound(f"partion {part_name} not found")
 
     def get_partitons(self, part_type):
-        part_infos = []
-        for part_info in self.meta[self.FBOBMC_PART_INFO_KEY]:
-            if part_type == part_info["name"]:
-                part_infos.append(part_info)
-
-        return part_infos
+        return [
+            part_info
+            for part_info in self.meta[self.FBOBMC_PART_INFO_KEY]
+            if part_type == part_info["name"]
+        ]

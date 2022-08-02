@@ -107,7 +107,7 @@ def p_expression_const(p):
 
 def p_error(p):
     if p:
-        print(("Unexpected token: {}".format(p)))
+        print(f"Unexpected token: {p}")
     else:
         print("Unexpectedly reached end of input")
 

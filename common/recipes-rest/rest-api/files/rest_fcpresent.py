@@ -38,23 +38,19 @@ def get_fcpresent():
 
     # FC101 top (101,102)
     # FC201 bottom (201,202)
-    if (slot == 101) or (slot == 102):
+    if slot in [101, 102]:
         mon_slot = slot + FC_CARD_BASE
 
-    if (slot == 201) or (slot == 202):
+    if slot in [201, 202]:
         mon_slot = slot - FC_CARD_BASE
 
-    if mon_slot:
-        if is_mon_fc_present() == None:
-            status = "Not Applicable"  # gpio read failed
-        elif is_mon_fc_present():
-            status = "Present"
-        else:
-            status = "Removed"
+    if mon_slot and is_mon_fc_present() is None or not mon_slot:
+        status = "Not Applicable"  # gpio read failed
+    elif mon_slot and is_mon_fc_present() != None and is_mon_fc_present():
+        status = "Present"
     else:
-        status = "Not Applicable"  # If this was a LC
-
-    result = {
+        status = "Removed"
+    return {
         "Information": {
             "Slotid": slot,
             "Monitored Slotid": mon_slot,
@@ -64,4 +60,3 @@ def get_fcpresent():
         "Actions": [],
         "Resources": [],
     }
-    return result

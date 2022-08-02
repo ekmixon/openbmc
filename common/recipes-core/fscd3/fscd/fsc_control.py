@@ -94,13 +94,17 @@ class TTable:
     def run(self, value, ctx):
         mini = 0
 
-        if value >= self.compare_fsc_value:
-            if math.fabs(self.compare_fsc_value - value) <= self.poshyst:
-                return self.last_out
+        if (
+            value >= self.compare_fsc_value
+            and math.fabs(self.compare_fsc_value - value) <= self.poshyst
+        ):
+            return self.last_out
 
-        if value <= self.compare_fsc_value:
-            if math.fabs(self.compare_fsc_value - value) <= self.neghyst:
-                return self.last_out
+        if (
+            value <= self.compare_fsc_value
+            and math.fabs(self.compare_fsc_value - value) <= self.neghyst
+        ):
+            return self.last_out
 
         for (in_thr, out) in self.table:
             mini = out
@@ -141,9 +145,9 @@ class TTable4Curve:
         mini = 0
         dead_fans = len(ctx["dead_fans"])
 
-        if self.table == None:
+        if self.table is None:
             self.table = self.table_normal_up
-        if self.compare_fsc_value == None:
+        if self.compare_fsc_value is None:
             self.compare_fsc_value = value
             self.accelerate = 1
         elif value > self.compare_fsc_value:

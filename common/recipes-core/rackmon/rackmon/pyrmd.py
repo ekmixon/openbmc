@@ -28,10 +28,7 @@ logstart = None
 def log(*args, **kwargs):
     if modbuslog:
         t = time.time() - logstart
-        if all(args):
-            pfx = "[{:4.02f}]".format(t)
-        else:
-            pfx = ""
+        pfx = "[{:4.02f}]".format(t) if all(args) else ""
         print(pfx, *args, file=modbuslog, **kwargs)
 
 
@@ -127,10 +124,7 @@ class PSU:
             return
         try:
             bs = await read_register(self.addr, reg.start, reg.length)
-            if reg.convert:
-                self.readings[reg.name] = reg.convert(bs)
-            else:
-                self.readings[reg.name] = bs
+            self.readings[reg.name] = reg.convert(bs) if reg.convert else bs
             self.uptimes[reg.name] = time.time()
             return True
         except ModbusTimeout:
@@ -142,11 +136,8 @@ class PSU:
         if self.recheck and now < self.recheck:
             return
         self.recheck = None
-        if all(
-            not ok
-            for ok in await asyncio.gather(
-                *[self.update_register(reg) for reg in self.regs]
-            )
+        if not any(
+            await asyncio.gather(*[self.update_register(reg) for reg in self.regs])
         ):
             # If all reads failed, wait `rescan` seconds to check this PSU
             # address again

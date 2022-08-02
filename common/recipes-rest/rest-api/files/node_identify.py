@@ -14,14 +14,8 @@ class identifyNode(node):
     def __init__(self, name, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         # Get Platform Name
@@ -31,31 +25,21 @@ class identifyNode(node):
             identify_status = kv_get(identify_name[plat_name], FPERSIST)
         else:
             identify_status = kv_get("identify_slot1", FPERSIST)
-        info = {"Status of identify LED": identify_status}
-
-        return info
+        return {"Status of identify LED": identify_status}
 
     async def doAction(self, data, param={}):
         if data["action"] == "on":
             cmd = "/usr/bin/fpc-util --identify on"
             _, stdout, _ = await async_exec(cmd, shell=True)
-            if stdout.startswith("Usage"):
-                res = "failure"
-            else:
-                res = "success"
+            res = "failure" if stdout.startswith("Usage") else "success"
         elif data["action"] == "off":
             cmd = "/usr/bin/fpc-util --identify off"
             _, stdout, _ = await async_exec(cmd, shell=True)
-            if stdout.startswith("Usage"):
-                res = "failure"
-            else:
-                res = "success"
+            res = "failure" if stdout.startswith("Usage") else "success"
         else:
             res = "not support this action"
 
-        result = {"result": res}
-
-        return result
+        return {"result": res}
 
 
 def get_node_identify(name):

@@ -93,12 +93,7 @@ resultlimit = 40  # Size limit of results when running in debug mode.
 
 pickle_protocol = 0  # Protocol to use when writing pickle files
 
-# String type-checking compatibility
-if sys.version_info[0] < 3:
-    string_types = str
-else:
-    string_types = str
-
+string_types = str
 MAXINT = sys.maxsize
 
 # This object is a stand-in for a logging object created by the
@@ -146,9 +141,8 @@ def format_result(r):
     if "\n" in repr_str:
         repr_str = repr(repr_str)
     if len(repr_str) > resultlimit:
-        repr_str = repr_str[:resultlimit] + " ..."
-    result = "<%s @ 0x%x> (%s)" % (type(r).__name__, id(r), repr_str)
-    return result
+        repr_str = f"{repr_str[:resultlimit]} ..."
+    return "<%s @ 0x%x> (%s)" % (type(r).__name__, id(r), repr_str)
 
 
 # Format stack entries when the parser is running in debug mode

@@ -48,7 +48,7 @@ def pal_get_platform_name() -> str:
 
     ret = libpal.pal_get_platform_name(ctypes.pointer(c_plat_name))
     if ret != 0:
-        raise LibPalError("pal_get_platform_name() returned " + str(ret))
+        raise LibPalError(f"pal_get_platform_name() returned {str(ret)}")
 
     return c_plat_name.value.decode("utf-8")
 
@@ -61,7 +61,7 @@ def pal_get_fru_id(fru_name: str) -> int:
 
     ret = libpal.pal_get_fru_id(c_fru_name, ctypes.pointer(c_fru_id))
     if ret != 0:
-        raise ValueError("Invalid FRU name: " + repr(fru_name))
+        raise ValueError(f"Invalid FRU name: {repr(fru_name)}")
 
     return c_fru_id.value
 
@@ -99,7 +99,7 @@ def pal_get_fru_sensor_list(fru_id: int) -> Tuple[int, ...]:
         fru_id, ctypes.pointer(c_sensor_list), ctypes.pointer(c_cnt)
     )
     if ret != 0:
-        raise LibPalError("pal_get_fru_sensor_list() returned " + str(ret))
+        raise LibPalError(f"pal_get_fru_sensor_list() returned {str(ret)}")
 
     return tuple(c_sensor_list[i] for i in range(c_cnt.value))
 
@@ -113,7 +113,7 @@ def pal_get_sensor_name(fru_id: int, snr_num: int) -> str:
         fru_id, ctypes.c_uint8(snr_num), ctypes.pointer(c_sensor_name)
     )
     if ret != 0:
-        raise LibPalError("pal_get_sensor_name() returned " + str(ret))
+        raise LibPalError(f"pal_get_sensor_name() returned {str(ret)}")
 
     return c_sensor_name.value.decode("utf-8")
 
@@ -124,7 +124,7 @@ def pal_is_fru_prsnt(fru_id: int) -> bool:
 
     ret = libpal.pal_is_fru_prsnt(fru_id, ctypes.pointer(c_status))
     if ret != 0:
-        raise ValueError("pal_is_fru_prsnt() returned " + str(ret))
+        raise ValueError(f"pal_is_fru_prsnt() returned {str(ret)}")
 
     return bool(c_status.value)
 
@@ -143,15 +143,12 @@ def pal_get_postcode(fru: int) -> List[int]:
     )
     if status != 0:
         raise ValueError("Error %d returned by PAL API" % (status))
-    ret = []
-    for i in range(0, plen.value):
-        ret.append((postcodes[i]))
-    return ret
+    return [postcodes[i] for i in range(plen.value)]
 
 
 def pal_get_4byte_postcode(fru: int):
     ret = []
-    MAX_PAGE_NUM = int(16)
+    MAX_PAGE_NUM = 16
     for i in range(1, (MAX_PAGE_NUM + 1)):
         postcodes = (ctypes.c_uint * 256)()
         page = ctypes.c_uint8(i)
@@ -162,9 +159,7 @@ def pal_get_4byte_postcode(fru: int):
 
         if status != 0:
             raise ValueError("Error %d returned by PAL API" % (status))
-        for i in range(0, int(plen.value / 4)):
-            ret.append((postcodes[i]))
-
+        ret.extend(postcodes[i] for i in range(int(plen.value / 4)))
     return ret
 
 
@@ -178,7 +173,7 @@ def sensor_cache_read(fru_id: int, snr_num: int) -> float:
 
     ret = libpal.sensor_cache_read(fru_id, snr_num, ctypes.pointer(c_val))
     if ret != 0:
-        raise LibPalError("sensor_cache_read() returned " + str(ret))
+        raise LibPalError(f"sensor_cache_read() returned {str(ret)}")
 
     return c_val.value
 
@@ -188,7 +183,7 @@ def sensor_raw_read(fru_id: int, snr_num: int) -> float:
 
     ret = libpal.sensor_raw_read(fru_id, snr_num, ctypes.pointer(c_val))
     if ret != 0:
-        raise LibPalError("sensor_raw_read() returned " + str(ret))
+        raise LibPalError(f"sensor_raw_read() returned {str(ret)}")
 
     return c_val.value
 
@@ -227,6 +222,6 @@ def sensor_read_history(fru_id: int, snr_num: int, start_time: int) -> SensorHis
         start_time,
     )
     if ret != 0:
-        raise LibPalError("sensor_read_history() returned " + str(ret))
+        raise LibPalError(f"sensor_read_history() returned {str(ret)}")
 
     return SensorHistory(min_val.value, max_val.value, avg_val.value)

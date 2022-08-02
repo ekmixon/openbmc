@@ -58,7 +58,7 @@ class OpenBMCJSONFormatter(json_log_formatter.JSONFormatter):
 
 class JsonSyslogFormatter(OpenBMCJSONFormatter):
     def format(self, record):
-        return "rest-api: %s" % (super(JsonSyslogFormatter, self).format(record),)
+        return f"rest-api: {super(JsonSyslogFormatter, self).format(record)}"
 
 
 ACCESS_LOG_FORMAT = (
@@ -81,7 +81,7 @@ def get_logger_config(config):
             "class": "logging.StreamHandler",
             "stream": sys.stdout,
         }
-    LOGGER_CONF = {
+    return {
         "version": 1,
         "disable_existing_loggers": False,
         "formatters": {
@@ -116,4 +116,3 @@ def get_logger_config(config):
             }
         },
     }
-    return LOGGER_CONF

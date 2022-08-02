@@ -38,9 +38,7 @@ interested_keys = {
 
 
 async def get_vboot_status():
-    info = dict()
-    info["status"] = "-1"
-    info["status_text"] = "Unsupported"
+    info = {"status": "-1", "status_text": "Unsupported"}
     vboot_util = "/usr/local/bin/vboot-util"
     if not os.path.isfile(vboot_util):
         return info
@@ -51,15 +49,14 @@ async def get_vboot_status():
         info["status_text"] = data[-1].strip()
         if "Verified boot is not supported" in info["status_text"]:
             return info
-        m = re.match("Status CRC: (0[xX][0-9a-fA-F]+)", data[-4].strip())
-        if m:
-            info["status_crc"] = m.group(1)
-        m = re.match("Status type \((\d+)\) code \((\d+)\)", data[-2].strip())
-        if m:
-            info["status"] = "{}.{}".format(m.group(1), m.group(2))
-        m = re.match("TPM.? status  \((\d+)\)", data[-3].strip())
-        if m:
-            info["tpm_status"] = m.group(1)
+        if m := re.match("Status CRC: (0[xX][0-9a-fA-F]+)", data[-4].strip()):
+            info["status_crc"] = m[1]
+        if m := re.match(
+            "Status type \((\d+)\) code \((\d+)\)", data[-2].strip()
+        ):
+            info["status"] = f"{m[1]}.{m[2]}"
+        if m := re.match("TPM.? status  \((\d+)\)", data[-3].strip()):
+            info["tpm_status"] = m[1]
         for l in data:
             a = l.split(": ")
             if len(a) == 2:

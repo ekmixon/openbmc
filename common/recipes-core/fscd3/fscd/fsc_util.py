@@ -55,9 +55,7 @@ LOG_MAP = {
 def clamp(v, minv, maxv):
     if v <= minv:
         return minv
-    if v >= maxv:
-        return maxv
-    return v
+    return maxv if v >= maxv else v
 
 
 class Logger(object):

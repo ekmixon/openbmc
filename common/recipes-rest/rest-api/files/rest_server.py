@@ -32,10 +32,7 @@ def get_bic_status():
     try:
         ret = check_output(cmd).decode()
 
-        if "Usage:" in ret or "fail " in ret:
-            return 0
-        else:
-            return 1
+        return 0 if "Usage:" in ret or "fail " in ret else 1
     except (OSError, IOError):
         return 2  # cmd not found, i.e. no BIC on this platform
     except (CalledProcessError):
@@ -52,13 +49,11 @@ def get_server():
 
     bic_status = get_bic_status()
 
-    result = {
+    return {
         "Information": {"status": status, "BIC_ok": bic_status},
         "Actions": ["power-on", "power-off", "power-reset"],
         "Resources": [],
     }
-
-    return result
 
 
 def server_action(data):
@@ -98,9 +93,8 @@ def server_action(data):
         res = "failure"
         reason = "invalid action"
 
-    if res == "failure":
-        result = {"result": res, "reason": reason}
-    else:
-        result = {"result": res}
-
-    return result
+    return (
+        {"result": res, "reason": reason}
+        if res == "failure"
+        else {"result": res}
+    )

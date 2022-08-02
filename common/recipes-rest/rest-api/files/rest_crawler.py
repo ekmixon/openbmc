@@ -8,10 +8,10 @@ class OpenBMC:
     def __init__(self, host):
 
         self.host = host
-        self.baseurl = host + ":8080"
+        self.baseurl = f"{host}:8080"
         self.conn = http.client.HTTPConnection(self.baseurl)
-        self.content = dict()
-        self.actions = dict()
+        self.content = {}
+        self.actions = {}
 
     def get_node(self, url):
         self.conn.request("GET", url)
@@ -24,8 +24,7 @@ class OpenBMC:
         data = {"action": action}
         self.conn.request("POST", url, json.dumps(data), headers)
         resp_raw = self.conn.getresponse()
-        resp = json.loads(resp_raw.read().decode())
-        return resp
+        return json.loads(resp_raw.read().decode())
 
     # Make sure to mock out things like sled-cycle and reboot
     # before crawling! :-)
@@ -43,7 +42,7 @@ class OpenBMC:
             if action_resp_checker is not None:
                 action_resp_checker(url, action, resp)
         for res in data["Resources"]:
-            self.crawl(url + "/" + res, action_resp_checker)
+            self.crawl(f"{url}/{res}", action_resp_checker)
 
     def print(self):
         print(self.content)
@@ -53,20 +52,16 @@ def read_only_action_checker(url, action, resp):
     expected_resp = {"result": "not-supported"}
     if resp != expected_resp:
         print(
-            "ERROR: Unexpected response to action when read-only %s on url: %s"
-            % (action, url)
+            f"ERROR: Unexpected response to action when read-only {action} on url: {url}"
         )
+
     else:
-        print("ACTION %s secured on %s" % (action, url))
+        print(f"ACTION {action} secured on {url}")
 
 
 def main():
-    if len(sys.argv) > 1:
-        HOST = sys.argv[1]
-    else:
-        HOST = "localhost"
-
-    print("Crawling %s" % (HOST))
+    HOST = sys.argv[1] if len(sys.argv) > 1 else "localhost"
+    print(f"Crawling {HOST}")
 
     obmc = OpenBMC(HOST)
     obmc.crawl("/api", read_only_action_checker)

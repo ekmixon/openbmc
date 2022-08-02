@@ -50,9 +50,7 @@ def read_register(args):
     bcm = get_bcm(args)
     val = bcm.read(args.page, args.register, args.size)
     print(
-        "Read from BCM5396 ({}:{}.{}): {}".format(
-            hex(args.page), hex(args.register), args.size, hex(val)
-        )
+        f"Read from BCM5396 ({hex(args.page)}:{hex(args.register)}.{args.size}): {hex(val)}"
     )
 
 
@@ -60,9 +58,7 @@ def write_register(args):
     bcm = get_bcm(args)
     val = bcm.write(args.page, args.register, args.value, args.size)
     print(
-        "Write to BCM5396 ({}.{}): {}".format(
-            hex(args.page), hex(args.register), hex(args.value)
-        )
+        f"Write to BCM5396 ({hex(args.page)}.{hex(args.register)}): {hex(args.value)}"
     )
 
 
@@ -115,14 +111,14 @@ def __parse_port_list(parm):
         if idx == -1:
             p = int(port)
             if p < 0 or p > 15:
-                raise Exception("Invalid port number %s" % p)
+                raise Exception(f"Invalid port number {p}")
             # just one port
             ports.append(p)
         else:
             start = int(port[:idx])
             end = int(port[idx + 1 :])
             if start > end or start < 0 or end > 15:
-                raise Exception("Invalid port range %s-%s" % (start, end))
+                raise Exception(f"Invalid port range {start}-{end}")
             ports.extend(range(start, end + 1))
     return ports
 
@@ -148,20 +144,20 @@ def add_vlan(args):
     # make sure untag is subset of fwd
     if not set(untag).issubset(set(fwd)):
         raise Exception(
-            "Some untagged ports, %s, are not part of forward ports"
-            % (set(untag) - set(fwd))
+            f"Some untagged ports, {set(untag) - set(fwd)}, are not part of forward ports"
         )
+
     bcm.add_vlan(vid, untag, fwd, spt)
-    print("Added VLAN: %s" % vid)
-    print("Ports in VLAN: %s" % sorted(fwd))
-    print("Ports without VLAN tag: %s" % sorted(untag))
+    print(f"Added VLAN: {vid}")
+    print(f"Ports in VLAN: {sorted(fwd)}")
+    print(f"Ports without VLAN tag: {sorted(untag)}")
 
 
 def remove_vlan(args):
     bcm = get_bcm(args)
     vid = args.vid
     bcm.remove_vlan(vid)
-    print("Removed VLAN: %s" % vid)
+    print(f"Removed VLAN: {vid}")
 
 
 def show_vlan(args):
@@ -169,28 +165,28 @@ def show_vlan(args):
     vid = args.vid
     vlan = bcm.get_vlan(vid)
     if not vlan["valid"]:
-        print("VLAN %s does not exist" % vid)
+        print(f"VLAN {vid} does not exist")
     else:
-        print("VLAN: %s" % vid)
-        print("Spanning tree index: %s" % vlan["spt"])
-        print("Ports in VLAN: %s" % sorted(vlan["fwd"]))
-        print("Untagged ports in VLAN: %s" % sorted(vlan["untag"]))
+        print(f"VLAN: {vid}")
+        print(f'Spanning tree index: {vlan["spt"]}')
+        print(f'Ports in VLAN: {sorted(vlan["fwd"])}')
+        print(f'Untagged ports in VLAN: {sorted(vlan["untag"])}')
 
 
 def set_port_vlan(args):
     bcm = get_bcm(args)
     bcm.vlan_set_port_default(args.port, args.vid, args.pri)
-    print("Set VLAN default for port: %s" % args.port)
-    print("Default VLAN: %s" % args.vid)
-    print("Default priority %s" % args.pri)
+    print(f"Set VLAN default for port: {args.port}")
+    print(f"Default VLAN: {args.vid}")
+    print(f"Default priority {args.pri}")
 
 
 def get_port_vlan(args):
     bcm = get_bcm(args)
     port = bcm.vlan_get_port_default(args.port)
-    print("Get VLAN default for port: %s" % args.port)
-    print("Default VLAN: %s" % port["vid"])
-    print("Default priority: %s" % port["priority"])
+    print(f"Get VLAN default for port: {args.port}")
+    print(f'Default VLAN: {port["vid"]}')
+    print(f'Default priority: {port["priority"]}')
 
 
 def vlan_parser(subparser):
@@ -219,8 +215,9 @@ def vlan_parser(subparser):
         type=int,
         default=SPT_DEFAULT,
         nargs="?",
-        help="Spanning tree index (default: %s)" % SPT_DEFAULT,
+        help=f"Spanning tree index (default: {SPT_DEFAULT})",
     )
+
     add_parser.set_defaults(func=add_vlan)
 
     remove_parser = vlan_sub.add_parser("remove", help="Remove a VLAN entry")
@@ -247,8 +244,9 @@ def vlan_parser(subparser):
         type=int,
         default=PRI_DEFAULT,
         nargs="?",
-        help="The default priority for this port " "(default: %s)" % PRI_DEFAULT,
+        help=f"The default priority for this port (default: {PRI_DEFAULT})",
     )
+
     set_port.set_defaults(func=set_port_vlan)
 
     get_port = port_sub.add_parser("get", help="Get VLAN default for a port")
@@ -271,39 +269,45 @@ def access_parser(ap):
         "--cs",
         type=int,
         default=SPI_CS_DEFAULT,
-        help="The GPIO number for SPI CS pin (default: %s)" % SPI_CS_DEFAULT,
+        help=f"The GPIO number for SPI CS pin (default: {SPI_CS_DEFAULT})",
     )
+
     spi_group.add_argument(
         "--clk",
         type=int,
         default=SPI_CLK_DEFAULT,
-        help="The GPIO number for SPI CLK pin (default: %s)" % SPI_CLK_DEFAULT,
+        help=f"The GPIO number for SPI CLK pin (default: {SPI_CLK_DEFAULT})",
     )
+
     spi_group.add_argument(
         "--mosi",
         type=int,
         default=SPI_MOSI_DEFAULT,
-        help="The GPIO number for SPI MOSI pin (default: %s)" % SPI_MOSI_DEFAULT,
+        help=f"The GPIO number for SPI MOSI pin (default: {SPI_MOSI_DEFAULT})",
     )
+
     spi_group.add_argument(
         "--miso",
         type=int,
         default=SPI_MISO_DEFAULT,
-        help="The GPIO number for SPI MISO pin (default: %s)" % SPI_MISO_DEFAULT,
+        help=f"The GPIO number for SPI MISO pin (default: {SPI_MISO_DEFAULT})",
     )
+
     mdio_group = ap.add_argument_group("MDIO Access (default)")
     mdio_group.add_argument(
         "--mdc",
         type=int,
         default=MDIO_MDC_DEFAULT,
-        help="The GPIO number for MDC pin (default: %s)" % MDIO_MDC_DEFAULT,
+        help=f"The GPIO number for MDC pin (default: {MDIO_MDC_DEFAULT})",
     )
+
     mdio_group.add_argument(
         "--mdio",
         type=int,
         default=MDIO_MDIO_DEFAULT,
-        help="The GPIO number for MDIO pin (default: %s)" % MDIO_MDIO_DEFAULT,
+        help=f"The GPIO number for MDIO pin (default: {MDIO_MDIO_DEFAULT})",
     )
+
     return ap
 
 

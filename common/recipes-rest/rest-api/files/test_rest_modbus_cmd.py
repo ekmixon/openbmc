@@ -146,7 +146,7 @@ class TestRestModbusCmd(AioHTTPTestCase):
         )
 
     def test_validate_payload_commands_not_allowed(self):
-        for opcode in range(0, 0x100):
+        for opcode in range(0x100):
             if opcode in rest_modbus_cmd.ALLOWED_OPCODES:
                 continue
 

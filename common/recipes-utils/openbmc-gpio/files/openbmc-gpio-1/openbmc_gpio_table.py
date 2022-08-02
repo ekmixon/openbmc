@@ -54,7 +54,7 @@ class BitsEqual(object):
         )
 
     def get_registers(self):
-        return set([self.register])
+        return {self.register}
 
     def check(self):
         return soc_get_register(self.register).bits_value(self.bits) == self.value
@@ -116,7 +116,7 @@ class AndOrBase(object):
 
 class And(AndOrBase):
     def __str__(self):
-        return "AND(%s, %s)" % (str(self.left), str(self.right))
+        return f"AND({str(self.left)}, {str(self.right)})"
 
     def check(self):
         return self.left.check() and self.right.check()
@@ -135,7 +135,7 @@ class And(AndOrBase):
 
 class Or(AndOrBase):
     def __str__(self):
-        return "OR(%s, %s)" % (str(self.left), str(self.right))
+        return f"OR({str(self.left)}, {str(self.right)})"
 
     def check(self):
         return self.left.check() or self.right.check()
@@ -218,7 +218,7 @@ class SocGPIOTable(object):
         all_funcs = []
         for func in funcs:
             cond = func.condition
-            all_funcs.append("%s:%s" % (func.name, str(cond)))
+            all_funcs.append(f"{func.name}:{str(cond)}")
             if active_func is None and (cond is None or cond.check()):
                 active_func = func.name
 
@@ -229,7 +229,7 @@ class SocGPIOTable(object):
             )
             return ("", "")
         else:
-            desc = "%s => %s, functions: %s" % (pin, active_func, ", ".join(all_funcs))
+            desc = f'{pin} => {active_func}, functions: {", ".join(all_funcs)}'
             return (active_func, desc)
 
     def dump_pin(self, pin, out=sys.stdout, refresh=False):

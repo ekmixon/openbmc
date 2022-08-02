@@ -14,9 +14,7 @@ class TestCommonRoutes(unittest.TestCase):
 
         redfish = Redfish()
         redfish.setup_redfish_common_routes(app)
-        registered_routes = set()
-        for route in app.router.resources():
-            registered_routes.add(route.url())
+        registered_routes = {route.url() for route in app.router.resources()}
         routes_expected = [
             "/redfish",
             "/redfish/v1",
@@ -47,16 +45,15 @@ class TestCommonRoutes(unittest.TestCase):
                     redfish = Redfish()
                     redfish.setup_multisled_routes(app)
                 for i in range(1, pal_response + 1):  # +1 to iterate uptill last slot
-                    server_name = "server{}".format(i)
-                    routes_expected.append("/redfish/v1/Chassis/{}".format(server_name))
-                    routes_expected.append(
-                        "/redfish/v1/Chassis/{}/Power".format(server_name)
+                    server_name = f"server{i}"
+                    routes_expected.extend(
+                        (
+                            f"/redfish/v1/Chassis/{server_name}",
+                            f"/redfish/v1/Chassis/{server_name}/Power",
+                            f"/redfish/v1/Chassis/{server_name}/Thermal",
+                        )
                     )
-                    routes_expected.append(
-                        "/redfish/v1/Chassis/{}/Thermal".format(server_name)
-                    )
-                registered_routes = set()
-                for route in app.router.resources():
-                    registered_routes.add(route.url())
+
+                registered_routes = {route.url() for route in app.router.resources()}
                 self.maxDiff = None
                 self.assertEqual(sorted(routes_expected), sorted(registered_routes))

@@ -53,13 +53,12 @@ def read_tpm2_pcr(algo, pcr_id):
     if os.access("/usr/bin/tpm2_pcrread", os.X_OK):
         cmd = ["/usr/bin/tpm2_pcrread", f"{algo}:{pcr_id}"]
         tpm2_pcr_reading = subprocess.check_output(cmd).decode("utf-8")
-        tpm2_pcr = bytes.fromhex(tpm2_pcr_reading.split()[3][2:])
+        return bytes.fromhex(tpm2_pcr_reading.split()[3][2:])
     else:
         # fallback to TPM2 3.x tool
         cmd = ["/usr/bin/tpm2_pcrlist", "-L", f"{algo}:{pcr_id}"]
         tpm2_pcr_reading = subprocess.check_output(cmd).decode("utf-8")
-        tpm2_pcr = bytes.fromhex(tpm2_pcr_reading.split()[4])
-    return tpm2_pcr
+        return bytes.fromhex(tpm2_pcr_reading.split()[4])
 
 
 def hash_comp(filename, offset, size, algo="sha256"):
@@ -265,25 +264,24 @@ ATTEST_COMPONENTS = [
     "blank-u-boot-env",
 ]
 OS_SUB_COMPNAME = ["kernel", "ramdisk", "fdt"]
-RECCOVERY_OS_SUB_COMPNAME = ["rec-" + c for c in OS_SUB_COMPNAME]
+RECCOVERY_OS_SUB_COMPNAME = [f"rec-{c}" for c in OS_SUB_COMPNAME]
 
 
 def print_attest_list(fw_ver, raw_sha1_hashes, raw_sha256_hashes, comp):
-    if "os" == comp or "rec-os" == comp:
-        attlist = dict()
-        subcomp_name = OS_SUB_COMPNAME if "os" == comp else RECCOVERY_OS_SUB_COMPNAME
-        for subcomp_idx, subcomp in enumerate(subcomp_name):
-            attlist[subcomp] = {
+    if comp in ["os", "rec-os"]:
+        subcomp_name = OS_SUB_COMPNAME if comp == "os" else RECCOVERY_OS_SUB_COMPNAME
+        attlist = {
+            subcomp: {
                 "hashes": {
                     "sha1": raw_sha1_hashes[comp][subcomp_idx].hex(),
                     "sha256": raw_sha256_hashes[comp][subcomp_idx].hex(),
                 },
-                "metadata": {
-                    "name": comp + "." + subcomp,
-                    "version": fw_ver,
-                },
+                "metadata": {"name": f"{comp}.{subcomp}", "version": fw_ver},
                 "command_lines": [],
             }
+            for subcomp_idx, subcomp in enumerate(subcomp_name)
+        }
+
     else:
         attlist = {
             comp: {
@@ -302,7 +300,7 @@ def print_attest_list(fw_ver, raw_sha1_hashes, raw_sha256_hashes, comp):
     if args.json:
         print(json.dumps(attlist))
     else:
-        for c in attlist.keys():
+        for c in attlist:
             k = attlist[c]["metadata"]["name"] + "(sha1)"
             v = attlist[c]["hashes"]["sha1"]
             print(f"{k:27}:{v}")
@@ -449,8 +447,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--version",
         action="version",
-        version="%(prog)s-v{}".format(MBOOT_CHECK_VERSION),
+        version=f"%(prog)s-v{MBOOT_CHECK_VERSION}",
     )
+
     parser.add_argument(
         "-0", "--flash0", help="flash0 device or image", default="/dev/flash0"
     )
@@ -483,6 +482,6 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception as e:
-        print("Exception: %s" % (str(e)))
+        print(f"Exception: {str(e)}")
         traceback.print_exc()
         sys.exit(EC_EXCEPTION)

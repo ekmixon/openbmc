@@ -93,7 +93,7 @@ def mmc_cid_read(mmc: mmc_dev_t) -> mmc_cid_t:
 
     ret = clibobmc_mmc.mmc_cid_read(ctypes.pointer(mmc), ctypes.pointer(cid))
     if ret != 0:
-        raise LibObmcMmcException("mmc_cid_read() returned " + str(ret))
+        raise LibObmcMmcException(f"mmc_cid_read() returned {str(ret)}")
 
     return cid
 
@@ -103,7 +103,7 @@ def mmc_extcsd_read(mmc: mmc_dev_t) -> mmc_extcsd_t:
 
     ret = clibobmc_mmc.mmc_extcsd_read(ctypes.pointer(mmc), ctypes.pointer(extcsd))
     if ret != 0:
-        raise LibObmcMmcException("mmc_extcsd_read() returned " + str(ret))
+        raise LibObmcMmcException(f"mmc_extcsd_read() returned {str(ret)}")
 
     return extcsd
 

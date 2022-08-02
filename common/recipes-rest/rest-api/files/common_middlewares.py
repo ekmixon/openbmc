@@ -73,17 +73,17 @@ async def auth_enforcer(app, handler):
         # Anything else will be forbidden.
         if not acls and request.method != "GET":
             server_logger.info(
-                "AUTH:Missing acl config for non-get[%s] endpoint %s. Blocking access"
-                % (request.method, request.path)
+                f"AUTH:Missing acl config for non-get[{request.method}] endpoint {request.path}. Blocking access"
             )
+
             raise HTTPForbidden()
         if acls:
             identity = common_auth.auth_required(request)  # type: common_auth.Identity
             common_auth.permissions_required(request, acls)
             server_logger.info(
-                "AUTH:Authorized %s for [%s]%s"
-                % (identity, request.method, request.path)
+                f"AUTH:Authorized {identity} for [{request.method}]{request.path}"
             )
+
         resp = await handler(request)
         return resp
 
@@ -104,8 +104,7 @@ async def ratelimiter(app, handler):
         user_agent = request.headers.get("User-Agent")
         if await ratelimiter.is_limited(request.path, request.method, user_agent):
             raise HTTPTooManyRequests()
-        else:
-            resp = await handler(request)
-            return resp
+        resp = await handler(request)
+        return resp
 
     return middleware_handler

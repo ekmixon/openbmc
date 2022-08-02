@@ -35,16 +35,16 @@ def _run_gpiocli(
     """
     shell_cmd = "/usr/local/bin/gpiocli"
     if shadow:
-        shell_cmd += " --shadow %s" % shadow
+        shell_cmd += f" --shadow {shadow}"
     if chip:
-        shell_cmd += " --chip %s" % chip
+        shell_cmd += f" --chip {chip}"
     if name:
-        shell_cmd += " --pin-name %s" % name.upper()
+        shell_cmd += f" --pin-name {name.upper()}"
     if offset:
-        shell_cmd += " --pin-offset %s" % str(offset)
-    shell_cmd += " %s" % gpio_cmd
+        shell_cmd += f" --pin-offset {str(offset)}"
+    shell_cmd += f" {gpio_cmd}"
     if gpio_args:
-        shell_cmd += " %s" % str(gpio_args)
+        shell_cmd += f" {str(gpio_args)}"
 
     proc = subprocess.Popen(
         shell_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -73,12 +73,12 @@ def gpio_export(name, shadow, chip=_GPIO_CHIP_ASPEED):
     """Export control of the gpio pin to user space.
     """
     if shadow is None:
-        shadow = "%s_%s" % (chip, name)
+        shadow = f"{chip}_{name}"
     shadowdir = os.path.join(_GPIO_SHADOW_DIR, shadow)
     if os.path.exists(shadowdir):
         raise Exception('Shadow "%s" exists already' % shadowdir)
 
-    print("exporting gpio (%s, %s), shadow=%s" % (chip, name, shadow))
+    print(f"exporting gpio ({chip}, {name}), shadow={shadow}")
     _run_gpiocli("export", name=name, chip=chip, shadow=shadow)
 
 
@@ -86,10 +86,7 @@ def _shadow_exists(name):
     """Check if the shadow file exists.
     """
     path = os.path.join(_GPIO_SHADOW_DIR, name)
-    if os.path.islink(path):
-        return True
-    else:
-        return False
+    return bool(os.path.islink(path))
 
 
 def gpio_name_to_offset(name, chip=_GPIO_CHIP_ASPEED):
@@ -154,10 +151,7 @@ def gpio_set_value(name, value, chip=_GPIO_CHIP_ASPEED, change_direction=True):
        The pin direction will be explicitly updated to <out> unless callers
        say no (for example, callers already set direction to <out>).
     """
-    cmd = "set-value"
-    if change_direction:
-        cmd = "set-init-value"
-
+    cmd = "set-init-value" if change_direction else "set-value"
     if _shadow_exists(name):
         _run_gpiocli(cmd, gpio_args=str(value), shadow=name)
     else:
@@ -165,12 +159,7 @@ def gpio_set_value(name, value, chip=_GPIO_CHIP_ASPEED, change_direction=True):
 
 
 def gpio_info(name, chip=_GPIO_CHIP_ASPEED):
-    res = {}
-
-    if _shadow_exists(name):
-        res["shadow"] = name
-    else:
-        res["shadow"] = None
+    res = {"shadow": name if _shadow_exists(name) else None}
 
     res["direction"] = gpio_get_direction(name, chip=chip)
     if res["direction"] == "out":

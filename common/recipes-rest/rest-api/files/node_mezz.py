@@ -23,19 +23,12 @@ from rest_pal_legacy import pal_get_platform_name
 
 class mezzNode(node):
     def __init__(self, info=None, actions=None):
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
 
 def get_node_mezz():
     name = pal_get_platform_name()
-    info = {"Description": name + " Mezzanine Card"}
+    info = {"Description": f"{name} Mezzanine Card"}
 
     return mezzNode(info)

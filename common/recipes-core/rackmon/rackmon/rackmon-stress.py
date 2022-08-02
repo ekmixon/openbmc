@@ -12,10 +12,7 @@ import time
 
 class LockFile:
     def __init__(self, path):
-        if os.path.exists(path):
-            self.file = open(path, "w")  # noqa: P201
-        else:
-            self.file = open(path, "+w")  # noqa: P201
+        self.file = open(path, "w") if os.path.exists(path) else open(path, "+w")
 
     def __deinit__(self):
         self.file.close()
@@ -31,9 +28,7 @@ class LockFile:
         if self.file.writable():
             fcntl.lockf(self.file, fcntl.LOCK_UN)
         self.file.close()
-        if exc_type is not None:
-            return False
-        return True
+        return exc_type is None
 
 
 class SolitonBeamLock(LockFile):
@@ -75,7 +70,7 @@ def sv(svc_list, cmd):
                 subprocess.check_call(["wdtcli", "set-timeout", "3600"])
         except Exception:
             failed.append(svc)
-    if len(failed) > 0 and len(svc_list) > 0:
+    if failed and len(svc_list) > 0:
         print(",".join(failed) + " services failed command: " + cmd)
 
 
@@ -101,12 +96,11 @@ def rackmonstatus():
     ret = {}
     out = subprocess.check_output(["rackmonstatus"]).decode().splitlines()
     for line in out:
-        m = rx.search(line)
-        if m:
-            addr = m.group(1)
-            crc = int(m.group(2))
-            timeouts = int(m.group(3))
-            baud = int(m.group(4))
+        if m := rx.search(line):
+            addr = m[1]
+            crc = int(m[2])
+            timeouts = int(m[3])
+            baud = int(m[4])
             ret[addr] = {"crc": crc, "timeouts": timeouts, "baud": baud}
     return ret
 
@@ -114,10 +108,10 @@ def rackmonstatus():
 def rackmon_run_stats(before, after):
     removed = [addr for addr in before.keys() if addr not in after.keys()]
     added = [addr for addr in after.keys() if addr not in after.keys()]
-    if len(removed) > 0:
-        print("ERROR: %s PSUs were taked out during experiment" % (",".join(removed)))
-    if len(added) > 0:
-        print("ERROR: %s PSUs were added during experiment" % (",".join(added)))
+    if removed:
+        print(f'ERROR: {",".join(removed)} PSUs were taked out during experiment')
+    if added:
+        print(f'ERROR: {",".join(added)} PSUs were added during experiment')
     total_timeouts = 0
     total_baud_changes = 0
     total_crc = 0
@@ -172,10 +166,7 @@ class CPUProfiler:
         return ret
 
     def get_diff(self, old, new):
-        ret = {}
-        for key in old:
-            ret[key] = new[key] - old[key]
-        return ret
+        return {key: new[key] - old[key] for key in old}
 
     def __init__(self):
         self.hz = self.discover_hz()
@@ -192,10 +183,7 @@ class CPUProfiler:
     def timestamp(self, full=False):
         new = self.get_proc_cpu()
         tick = time.time() - self.init
-        if full:
-            p = self.cur
-        else:
-            p = self.prev
+        p = self.cur if full else self.prev
         diff = self.get_diff(p, new)
         for k in diff:
             diff[k] = float(diff[k]) / float(self.hz)
@@ -211,7 +199,7 @@ def run_experiment_loop(iters, size, psus, interval, timeout=500):
     total_time = 0.0
     overruns = 0
     with CPUProfiler() as _:
-        for _ in range(0, iters):
+        for _ in range(iters):
             bts = time.time()
             dynamo_loop(size, psus, timeout)
             runtime_sec = time.time() - bts

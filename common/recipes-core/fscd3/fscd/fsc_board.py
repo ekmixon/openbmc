@@ -24,8 +24,7 @@ def board_fan_actions(fan, action="None"):
     - handling dead fan
     - handling fan led
     """
-    Logger.warn("%s needs action %s" % (fan.label, str(action)))
-    pass
+    Logger.warn(f"{fan.label} needs action {str(action)}")
 
 
 def board_host_actions(action="None", cause="None"):
@@ -34,8 +33,7 @@ def board_host_actions(action="None", cause="None"):
     - handling host power off
     - alarming/syslogging criticals
     """
-    Logger.warn("Host needs action %s and cause %s" % (str(action), str(cause)))
-    pass
+    Logger.warn(f"Host needs action {str(action)} and cause {str(cause)}")
 
 
 def board_callout(callout="None", **kwargs):
@@ -43,8 +41,7 @@ def board_callout(callout="None", **kwargs):
     Override this method for defining board specific callouts:
     - Exmaple chassis intrusion
     """
-    Logger.warn("Need to perform callout action %s" % callout)
-    pass
+    Logger.warn(f"Need to perform callout action {callout}")
 
 
 def all_slots_power_off():

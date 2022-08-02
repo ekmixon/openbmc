@@ -51,13 +51,11 @@ LOGGER_CONF = {
 # Handler for ipc resource endpoint
 @bottle.route("/ipc")
 def rest_ipc():
-    result = {
+    return {
         "Information": {"Description": "RESTful API Entry for IPC"},
         "Actions": [],
         "Resources": ["service0"],
     }
-
-    return result
 
 
 # Handler for service0 resource endpoint

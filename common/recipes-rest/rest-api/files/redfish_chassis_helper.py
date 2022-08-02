@@ -83,11 +83,7 @@ def get_sensor_details_helper(
 
 def get_single_sled_frus() -> t.List[str]:
     fru_name_map = pal.pal_fru_name_map()
-    fru_list = []
-    for fru_name in fru_name_map:
-        if "slot" not in fru_name:
-            fru_list.append(fru_name)
-    return fru_list
+    return [fru_name for fru_name in fru_name_map if "slot" not in fru_name]
 
 
 def get_chassis_members_json() -> t.List[t.Dict[str, t.Any]]:

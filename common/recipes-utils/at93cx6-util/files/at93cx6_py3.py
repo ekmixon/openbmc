@@ -44,7 +44,7 @@ class VerboseLogger:
                     )
                 )
             else:
-                sys.stderr.write("{}\n".format(caption))
+                sys.stderr.write(f"{caption}\n")
 
 
 class AT93CX6SPI(VerboseLogger):
@@ -56,7 +56,7 @@ class AT93CX6SPI(VerboseLogger):
         self, bus_width, gpio_cs, gpio_ck, gpio_do, gpio_di, model, verbose=False
     ):
         addr_bits_map = {AT93C46: 6, AT93C56: 8, AT93C66: 8, AT93C86: 10}
-        if bus_width != 8 and bus_width != 16:
+        if bus_width not in [8, 16]:
             raise Exception("Invalid bus width for AT93CX6!")
         if model not in addr_bits_map:
             raise Exception("Invalid model '%s'" % model)
@@ -92,8 +92,7 @@ class AT93CX6SPI(VerboseLogger):
             binary = binary[value:] + "0" * value
         else:
             binary = "0" * (-value) + binary[:value]
-        result = self.__bitstring_to_bytes(binary)
-        return result
+        return self.__bitstring_to_bytes(binary)
 
     def __io(self, op, addr, data=None):
         """
@@ -115,33 +114,26 @@ class AT93CX6SPI(VerboseLogger):
         # Format the command itself
         instruction = addr & self.addr_mask
         instruction = instruction | ((0x4 | (op & 0x3)) << self.addr_bits)
-        if data is not None:
-            if self.bus_width == 16:
-                write_data = struct.pack(">HH", instruction, data & 0xFFFF)
-            else:
-                write_data = struct.pack(">HB", instruction, data & 0xFF)
-        else:
+        if data is None:
             write_data = struct.pack(">H", instruction)
+        elif self.bus_width == 16:
+            write_data = struct.pack(">HH", instruction, data & 0xFFFF)
+        else:
+            write_data = struct.pack(">HB", instruction, data & 0xFF)
         write_data = self.__shift(write_data, 16 - (self.addr_bits + 3))
 
         self._verbose_print("Write data", write_data)
 
         # Run the command with the bitbang driver
         if read_bits > 0:
-            data_portion = "-r {} -w {}".format(read_bits, write_bits)
+            data_portion = f"-r {read_bits} -w {write_bits}"
         else:
-            data_portion = "-w {}".format(write_bits)
+            data_portion = f"-w {write_bits}"
 
-        cmd = "{} -s {} -c {} -o {} -i {} -b {}".format(
-            self.SPI_CMD,
-            self.gpio_cs,
-            self.gpio_ck,
-            self.gpio_do,
-            self.gpio_di,
-            data_portion,
-        )
+        cmd = f"{self.SPI_CMD} -s {self.gpio_cs} -c {self.gpio_ck} -o {self.gpio_do} -i {self.gpio_di} -b {data_portion}"
 
-        self._verbose_print("Command: {}".format(cmd))
+
+        self._verbose_print(f"Command: {cmd}")
 
         out, err = subprocess.Popen(
             cmd.split(), stdout=subprocess.PIPE, stdin=subprocess.PIPE
@@ -223,11 +215,8 @@ class AT93CX6(VerboseLogger):
         """
         Swap bytes for a 16-bit integer if instructed to do so.
         """
-        if self.bus_width == 16:
-            if self.byte_swap:
-                return ((value >> 8) & 0xFF) | ((value << 8) & 0xFF00)
-            else:
-                return value
+        if self.bus_width == 16 and self.byte_swap:
+            return ((value >> 8) & 0xFF) | ((value << 8) & 0xFF00)
         else:
             return value
 
@@ -271,7 +260,7 @@ class AT93CX6(VerboseLogger):
                 self.spi.erase(addr)
             self.spi.ewds()
 
-            self._verbose_print("Erased {} bytes from offset {}".format(limit, offset))
+            self._verbose_print(f"Erased {limit} bytes from offset {offset}")
 
     def read(self, offset=None, limit=None):
         """
@@ -303,9 +292,7 @@ class AT93CX6(VerboseLogger):
             value_at_position = self.__swap(self.spi.read(addr))
             output = output + struct.pack(pack_instruction, value_at_position)
 
-        self._verbose_print(
-            "Read {} bytes from offset {}".format(limit, offset), output
-        )
+        self._verbose_print(f"Read {limit} bytes from offset {offset}", output)
 
         return output
 
@@ -346,6 +333,4 @@ class AT93CX6(VerboseLogger):
             self.spi.write(actual_addr, value)
         self.spi.ewds()
 
-        self._verbose_print(
-            "Wrote {} bytes from offset {}".format(len(data), offset), data
-        )
+        self._verbose_print(f"Wrote {len(data)} bytes from offset {offset}", data)

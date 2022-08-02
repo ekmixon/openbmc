@@ -31,7 +31,7 @@ def configure_rackmond(reglist, verify_configure=False):
                 client.connect(srvpath)
                 client.send(config_packet)
         except Exception as e:
-            print("Exception while configuring rackmond: " + str(e))
+            print(f"Exception while configuring rackmond: {str(e)}")
 
     # Internal function to check if rackmond is configured
     def check_if_rackmond_configured():
@@ -61,7 +61,7 @@ def configure_rackmond(reglist, verify_configure=False):
         retry = 0
         configured = False
         while (not configured) and (retry < MAX_RETRY):
-            retry = retry + 1
+            retry += 1
             time.sleep(SLEEP_BETWEEN_RETRIES)
             configured = check_if_rackmond_configured()
             if not configured:

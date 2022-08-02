@@ -17,7 +17,7 @@ def postcode(fru, tmp_file):
             postcodes = pal_get_postcode(fru)
         except ValueError:
             return False
-        for i in range(0, len(postcodes)):
+        for i in range(len(postcodes)):
             sys.stdout.write("%02X " % (postcodes[i]))
             sys.stdout.flush()
             if i % 16 == 15:

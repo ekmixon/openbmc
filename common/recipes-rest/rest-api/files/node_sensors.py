@@ -48,22 +48,22 @@ async def sensor_util_history_clear(fru="all", sensor_id="", sensor_name=""):
                 m_val = rx.match(line)
                 m_na = rx_na.match(line)
                 if m_val:
-                    s_name = m_val.group(1)
-                    s_id = m_val.group(2)
-                    s_val = m_val.group(3)
-                    s_unit = m_val.group(4)
-                    s_status = m_val.group(5)
+                    s_name = m_val[1]
+                    s_id = m_val[2]
+                    s_val = m_val[3]
+                    s_unit = m_val[4]
+                    s_status = m_val[5]
                 elif m_na:
-                    s_name = m_na.group(1)
-                    s_id = m_na.group(2)
-                    s_val = m_na.group(3)
+                    s_name = m_na[1]
+                    s_id = m_na[2]
+                    s_val = m_na[3]
                     s_unit = "na"
-                    s_status = m_na.group(4)
+                    s_status = m_na[4]
                 else:
                     continue
 
                 if sensor_name != "" and sensor_name.lower() == s_name.lower():
-                    snr_num = "0x" + str(s_id)
+                    snr_num = f"0x{str(s_id)}"
                     cmd += [snr_num]
         except TimeoutError:
             print("TimeoutException received")
@@ -71,10 +71,7 @@ async def sensor_util_history_clear(fru="all", sensor_id="", sensor_name=""):
             print("Exception  received")
     try:
         retcode, stdout, stderr = await async_exec(cmd, shell=True)
-        if retcode == 0:
-            return {"result": "success"}
-        else:
-            return {"result": "failure"}
+        return {"result": "success"} if retcode == 0 else {"result": "failure"}
     except Exception:
         return {"result": "failure"}
 
@@ -90,10 +87,7 @@ async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", disp
     elif "history" in display:
         cmd += ["--history", period]
     sensors = []
-    if sensor_id != "":
-        sensor_id_val = int(sensor_id, base=16)
-    else:
-        sensor_id_val = 0
+    sensor_id_val = int(sensor_id, base=16) if sensor_id != "" else 0
     try:
         retcode, stdout, stderr = await async_exec(cmd, shell=False)
         out = stdout.splitlines()
@@ -118,30 +112,28 @@ async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", disp
 
         for line in out:
             if "history" in display:
-                m = rx.match(line)
-                if m:
-                    s_name = m.group(1)
-                    s_id = m.group(2)
-                    s_min = m.group(3)
-                    s_avg = m.group(4)
-                    s_max = m.group(5)
-                    snr = {"min": s_min, "avg": s_avg, "max": s_max}
-                    if "id" in display:
-                        snr["id"] = s_id
-                else:
+                if not (m := rx.match(line)):
                     continue
+                s_name = m[1]
+                s_id = m[2]
+                s_min = m[3]
+                s_avg = m[4]
+                s_max = m[5]
+                snr = {"min": s_min, "avg": s_avg, "max": s_max}
+                if "id" in display:
+                    snr["id"] = s_id
             else:
                 m_val = rx.match(line)
                 m_na = rx_na.match(line)
                 s_thresholds = {}
                 if m_val:
-                    s_name = m_val.group(1)
-                    s_id = m_val.group(2)
-                    s_val = m_val.group(3)
-                    s_unit = m_val.group(4)
-                    s_status = m_val.group(5)
+                    s_name = m_val[1]
+                    s_id = m_val[2]
+                    s_val = m_val[3]
+                    s_unit = m_val[4]
+                    s_status = m_val[5]
                     if "thresholds" in display:
-                        thres_str = m_val.group(6).strip()
+                        thres_str = m_val[6].strip()
                         threshold_arr = thres_str.split("|")
                         for t in threshold_arr:
                             a = t.split(": ")
@@ -166,7 +158,7 @@ async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", disp
                     snr["id"] = s_id
                 if "status" in display:
                     snr["status"] = s_status
-                if "thresholds" in display and len(s_thresholds) > 0:
+                if "thresholds" in display and s_thresholds:
                     snr["thresholds"] = s_thresholds
 
             processing_id = int(s_id, 16)
@@ -194,40 +186,24 @@ async def sensor_util(fru="all", sensor_name="", sensor_id="", period="60", disp
 class sensorsNode(node):
     def __init__(self, name, info=None, actions=None):
         self.name = name
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
-        snr_name = ""
-        snr_id = ""
-        period = "60"
-        display = []
-        if "display" in param:
-            display = param["display"].split(",")
-        if "name" in param:
-            snr_name = param["name"]
-        if "id" in param:
-            snr_id = param["id"]
-        if "history-period" in param:
-            period = param["history-period"]
+        display = param["display"].split(",") if "display" in param else []
+        snr_name = param["name"] if "name" in param else ""
+        snr_id = param["id"] if "id" in param else ""
+        period = param["history-period"] if "history-period" in param else "60"
         return await sensor_util(self.name, snr_name, snr_id, period, display)
 
     async def doAction(self, info, param={}):
-        snr_name = ""
-        snr = ""
-        if "name" in param:
-            snr_name = param["name"]
-        if "id" in param:
-            snr = param["id"]
-        if not self.actions:
-            return {"result": "failure"}
-        return await sensor_util_history_clear(self.name, snr, snr_name)
+        snr_name = param["name"] if "name" in param else ""
+        snr = param["id"] if "id" in param else ""
+        return (
+            await sensor_util_history_clear(self.name, snr, snr_name)
+            if self.actions
+            else {"result": "failure"}
+        )
 
 
 def get_node_sensors(name):

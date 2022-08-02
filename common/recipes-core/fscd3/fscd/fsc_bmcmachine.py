@@ -63,9 +63,10 @@ class BMCMachine(object):
         Returns:
             SensorValue tuples
         """
-        sensors = {}
-        for fru in self.frus:
-            sensors[fru] = get_sensor_tuples(fru, self.nums[fru], sensor_sources, inf)
+        sensors = {
+            fru: get_sensor_tuples(fru, self.nums[fru], sensor_sources, inf)
+            for fru in self.frus
+        }
 
         # read specific sensors
         if self.extra_sensors != {}:
@@ -75,13 +76,14 @@ class BMCMachine(object):
                     fru, None, {sensor_name: self.extra_sensors[sensor_name]}, None
                 )
                 # Merge sensors of the same fru
-                if fru in self.frus:
-                    sensors[fru] = {
+                sensors[fru] = (
+                    {
                         **sensors[fru],
                         **sensor,
                     }
-                else:
-                    sensors[fru] = sensor
+                    if fru in self.frus
+                    else sensor
+                )
 
         Logger.debug("Last fan speed : %d" % self.last_fan_speed)
         Logger.debug("Sensor reading")
@@ -93,7 +95,7 @@ class BMCMachine(object):
             for fru in self.frus:
                 if sensorname in sensors[fru]:
                     senvalue = sensors[fru][sensorname]
-                    Logger.debug(" {} = {}".format(sensorname, senvalue.value))
+                    Logger.debug(f" {sensorname} = {senvalue.value}")
 
             offset = 0
             if data.offset != None:
@@ -224,11 +226,7 @@ def get_sensor_tuple_sysfs(key, sensor_data, read_fail_counter=0, wrong_read_cou
     Returns:
         SensorValue tuple
     """
-    if sensor_data:
-        data = int(sensor_data.split("\n")[-2]) / 1000
-    else:
-        data = -1
-
+    data = int(sensor_data.split("\n")[-2]) / 1000 if sensor_data else -1
     return (
         symbolize_sensorname_sysfs(key),
         SensorValue(
@@ -268,10 +266,10 @@ def parse_all_sensors_util(sensor_data):
         if line.find(" NA ") != -1:
             m = re.match(r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+.\s+\((.+)\)$", line)
             if m is not None:
-                sid = int(m.group(2), 16)
-                name = m.group(1).strip()
+                sid = int(m[2], 16)
+                name = m[1].strip()
                 value = None
-                status = m.group(4)
+                status = m[4]
                 symname = symbolize_sensorname(name)
                 result[symname] = SensorValue(sid, name, value, None, status, 0, 0)
             continue
@@ -280,11 +278,11 @@ def parse_all_sensors_util(sensor_data):
             r"^(.*)\((0x..?)\)\s+:\s+([^\s]+)\s+([^\s]+)?\s+.\s+\((.+)\)$", line
         )
         if m is not None:
-            sid = int(m.group(2), 16)
-            name = m.group(1).strip()
-            value = float(m.group(3))
-            unit = m.group(4) if m.group(4) != None else ""
-            status = m.group(5)
+            sid = int(m[2], 16)
+            name = m[1].strip()
+            value = float(m[3])
+            unit = m[4] if m[4] != None else ""
+            status = m[5]
             symname = symbolize_sensorname(name)
             result[symname] = SensorValue(sid, name, value, unit, status, 0, 0)
     return result
@@ -334,10 +332,7 @@ def parse_fan_sysfs(sensor_data):
     Returns:
         PWM
     """
-    if sensor_data:
-        return int(sensor_data)
-    else:
-        return -1
+    return int(sensor_data) if sensor_data else -1
 
 
 def parse_fan_util(fan_data):
@@ -354,7 +349,7 @@ def parse_fan_util(fan_data):
     for line in sdata:
         m = re.match(r"Fan .*\sSpeed:\s+(\d+)\s", line)
         if m is not None:
-            return int(m.group(1))
+            return int(m[1])
     return -1
 
 
@@ -368,7 +363,4 @@ def parse_fan_kv(sensor_data):
     Returns:
         RPM
     """
-    if sensor_data and sensor_data != "NA":
-        return int(float(sensor_data))
-    else:
-        return -1
+    return int(float(sensor_data)) if sensor_data and sensor_data != "NA" else -1

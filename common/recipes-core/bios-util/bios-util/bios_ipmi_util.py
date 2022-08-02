@@ -14,8 +14,8 @@ def execute_IPMI_command(fru, netfn, cmd, req):
 
     sendreqdata = ""
     if req != "":
-        for i in range(0, len(req), 1):
-            sendreqdata += str(req[i]) + " "
+        for i in range(len(req)):
+            sendreqdata += f"{str(req[i])} "
 
     input = (
         IPMIUTIL
@@ -40,28 +40,19 @@ def execute_IPMI_command(fru, netfn, cmd, req):
         exit(-1)
 
     if int(result[2], 16) != 0:
-        print("IPMI Failed, CC Code:%s" % result[2])
+        print(f"IPMI Failed, CC Code:{result[2]}")
         exit(0)
 
     return result[3:]
 
 
 def status_decode(input):
-    if input == 1:
-        return "Enabled"
-    else:
-        return "Disabled"
+    return "Enabled" if input == 1 else "Disabled"
 
 
 def status_N_decode(input):
-    if input == 1:
-        return "Disabled"
-    else:
-        return "Enabled"
+    return "Disabled" if input == 1 else "Enabled"
 
 
 def trans2opcode(input):
-    if input == "enable":
-        return 1
-    else:
-        return 0
+    return 1 if input == "enable" else 0

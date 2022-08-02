@@ -30,18 +30,12 @@ class logsNode(node):
     def __init__(self, name, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         linfo = []
-        cmd = "/usr/local/bin/log-util " + quote(self.name) + " --print --json"
+        cmd = f"/usr/local/bin/log-util {quote(self.name)} --print --json"
         _, stdout, _ = await async_exec(cmd, shell=True)
         return json.loads(stdout)
 
@@ -49,15 +43,10 @@ class logsNode(node):
         if data["action"] != "clear":
             res = "failure"
         else:
-            cmd = "/usr/local/bin/log-util " + quote(self.name) + " --clear"
+            cmd = f"/usr/local/bin/log-util {quote(self.name)} --clear"
             _, stdout, _ = await async_exec(cmd, shell=True)
-            if stdout.startswith("Usage"):
-                res = "failure"
-            else:
-                res = "success"
-        result = {"result": res}
-
-        return result
+            res = "failure" if stdout.startswith("Usage") else "success"
+        return {"result": res}
 
 
 def get_node_logs(name):

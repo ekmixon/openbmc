@@ -22,7 +22,7 @@ sslctx = ssl.create_default_context()
 sslctx.check_hostname = False
 sslctx.verify_mode = ssl.CERT_NONE
 
-checkurl = "http{}://localhost:{}/api".format("s" if listen_ssl else "", port)
+checkurl = f'http{"s" if listen_ssl else ""}://localhost:{port}/api'
 interval = 30
 timeout = 10
 service = "restapi"
@@ -35,7 +35,7 @@ def killall(killcmd=b"python\x00/usr/local/bin/rest.py\x00"):
     try:
         pids = [pid for pid in os.listdir("/proc") if pid.isdigit()]
     except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "Error scanning /proc: {}".format(str(e)))
+        syslog.syslog(syslog.LOG_ERR, f"Error scanning /proc: {str(e)}")
     for pid in pids:
         try:
             with open(os.path.join("/proc", pid, "cmdline"), "rb") as cf:
@@ -97,8 +97,9 @@ def main():
                     # printed out as a string
                     syslog.syslog(
                         syslog.LOG_WARNING,
-                        "REST API timeout too many times : {}".format(str(ex)),
+                        f"REST API timeout too many times : {str(ex)}",
                     )
+
                 if graceleft <= 0:
                     syslog.syslog(syslog.LOG_ERR, "Killing unresponsive REST service")
                     runit_kill_restart(service)

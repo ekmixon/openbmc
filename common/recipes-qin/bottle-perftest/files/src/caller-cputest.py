@@ -22,5 +22,5 @@ import urllib2
 
 
 # keep pinging the service through bottle ipc server
-for x in range(0, 10000):
+for _ in range(10000):
     urllib2.urlopen("http://localhost:8043/ipc/service0").read()

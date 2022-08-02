@@ -26,7 +26,6 @@ from common_middlewares import jsonerrorhandler
 
 def bad_handler(request):
     raise ValueError("OOPS")
-    return web.Response(body=json.dumps({"status": "ok"}))
 
 
 def good_handler(request):

@@ -44,10 +44,7 @@ class CPUProfiler:
         return ret
 
     def get_diff(self, old, new):
-        ret = {}
-        for key in old:
-            ret[key] = new[key] - old[key]
-        return ret
+        return {key: new[key] - old[key] for key in old}
 
     def __init__(self):
         self.hz = self.discover_hz()
@@ -64,10 +61,7 @@ class CPUProfiler:
     def timestamp(self, full=False):
         new = self.get_proc_cpu()
         tick = time.time() - self.init
-        if full:
-            p = self.cur
-        else:
-            p = self.prev
+        p = self.cur if full else self.prev
         diff = self.get_diff(p, new)
         for k in diff:
             diff[k] = float(diff[k]) / float(self.hz)

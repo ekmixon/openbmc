@@ -63,26 +63,22 @@ def setup_attestation_endpoints(app: Application) -> None:
 
 class NodeSystemInfo(node):
     @staticmethod
-    # GET /attestation/system_information
     async def getInformation(param={}):
-        args = {}
-        # Default args
-        args["algo"] = "sha256"
-        args["flash0"] = "/dev/flash0"
-        args["flash1"] = "/dev/flash1"
-        args["recal"] = False
+        args = {
+            "algo": "sha256",
+            "flash0": "/dev/flash0",
+            "flash1": "/dev/flash1",
+            "recal": False,
+        }
+
         # We update the params if any were passed
         for argument in param.keys():
             if argument not in ["algo"]:
                 raise Exception("You are allowed to specify only algo")
-        args.update(param)
+        args |= param
         if args["algo"] not in ACCEPTABLE_ALGORITHMS:
-            raise Exception(
-                "Only acceptable algos are: {}".format(str(ACCEPTABLE_ALGORITHMS))
-            )
-        result = {}
-        # Let's get the system hashes first
-        result["system_hashes"] = obmc_attestation.measure.return_measure(args)
+            raise Exception(f"Only acceptable algos are: {str(ACCEPTABLE_ALGORITHMS)}")
+        result = {"system_hashes": obmc_attestation.measure.return_measure(args)}
         tpm_object = obmc_attestation.tpm2.Tpm2v4()
         # Let's get the TPM static info like TPM version
         result["tpm_info"] = tpm_object.get_tpm_static_information()

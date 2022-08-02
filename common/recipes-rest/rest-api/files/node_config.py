@@ -80,12 +80,11 @@ class configNode(node):
                     res = str(e).strip()
                     break
             else:
-                res = "refused: %s" % key
+                res = f"refused: {key}"
                 break
         if res == "":
             res = "failure"
-        result = {"result": res}
-        return result
+        return {"result": res}
 
 
 def get_node_config(name):

@@ -73,7 +73,7 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         cmd1 = "echo 20000 > ./test-data/test-sysfs-data/4-0033/temp1_input"
         cmd2 = "echo 20000 > ./test-data/test-sysfs-data/3-004b/temp1_input"
         cmd3 = "echo 30000 > ./test-data/test-sysfs-data/3-0048/temp1_input"
-        cmd = cmd1 + ";" + cmd2 + ";" + cmd3
+        cmd = f"{cmd1};{cmd2};{cmd3}"
         Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         self.fscd_tester.update_zones(dead_fans, 2)
 
@@ -91,7 +91,7 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         cmd1 = "echo 33000 > ./test-data/test-sysfs-data/4-0033/temp1_input"
         cmd2 = "echo 35000 > ./test-data/test-sysfs-data/3-004b/temp1_input"
         cmd3 = "echo 40000 > ./test-data/test-sysfs-data/3-0048/temp1_input"
-        cmd = cmd1 + ";" + cmd2 + ";" + cmd3
+        cmd = f"{cmd1};{cmd2};{cmd3}"
         Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         self.fscd_tester.update_zones(dead_fans, 2)
 
@@ -109,7 +109,7 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         cmd1 = "echo 50000 > ./test-data/test-sysfs-data/4-0033/temp1_input"
         cmd2 = "echo 20000 > ./test-data/test-sysfs-data/3-004b/temp1_input"
         cmd3 = "echo 30000 > ./test-data/test-sysfs-data/3-0048/temp1_input"
-        cmd = cmd1 + ";" + cmd2 + ";" + cmd3
+        cmd = f"{cmd1};{cmd2};{cmd3}"
         Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         self.fscd_tester.update_zones(dead_fans, 2)
 
@@ -127,7 +127,7 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         cmd1 = "echo 50000 > ./test-data/test-sysfs-data/4-0033/temp1_input"
         cmd2 = "echo 90000 > ./test-data/test-sysfs-data/3-004b/temp1_input"
         cmd3 = "echo 33000 > ./test-data/test-sysfs-data/3-0048/temp1_input"
-        cmd = cmd1 + ";" + cmd2 + ";" + cmd3
+        cmd = f"{cmd1};{cmd2};{cmd3}"
         Popen(cmd, shell=True, stdout=PIPE).stdout.read()
         self.fscd_tester.update_zones(dead_fans, 2)
 
@@ -144,5 +144,5 @@ class FscdSysfsOperationalTester(BaseFscdUnitTest):
         cmd1 = "echo 15000 > ./test-data/test-sysfs-data/4-0033/temp1_input"
         cmd2 = "echo 15000 > ./test-data/test-sysfs-data/3-004b/temp1_input"
         cmd3 = "echo 15000 > ./test-data/test-sysfs-data/3-0048/temp1_input"
-        cmd = cmd1 + ";" + cmd2 + ";" + cmd3
+        cmd = f"{cmd1};{cmd2};{cmd3}"
         Popen(cmd, shell=True, stdout=PIPE).stdout.read()

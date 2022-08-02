@@ -42,16 +42,10 @@ class Bcm5396MDIO:
         self.page = -1
 
     def __io(self, op, reg, val=0):
-        cmd = "%s -p -c %s -d %s %s %s %s" % (
-            self.MDIO_CMD,
-            self.mdc,
-            self.mdio,
-            op,
-            str(self.PHYADDR),
-            str(reg),
-        )
+        cmd = f"{self.MDIO_CMD} -p -c {self.mdc} -d {self.mdio} {op} {str(self.PHYADDR)} {str(reg)}"
+
         if op == "write":
-            cmd += " %s" % val
+            cmd += f" {val}"
         out = (
             subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
             .communicate()[0]
@@ -164,7 +158,7 @@ class Bcm5396SPI:
             if type(byte) is str:
                 byte = int(byte, 16)
             if byte > 255:
-                raise Exception("%s is not a byte in the list %s" % (byte, values))
+                raise Exception(f"{byte} is not a byte in the list {values}")
             result |= byte << pos
             pos += 8
         return result
@@ -175,30 +169,23 @@ class Bcm5396SPI:
             result.append(value & 0xFF)
             value >>= 8
         if value > 0:
-            raise Exception("Value, %s, is too large for %s bytes" % (value, n))
+            raise Exception(f"Value, {value}, is too large for {n} bytes")
         return result
 
     def __io(self, bytes_to_write, to_read=0):
         # TODO: check parameters
-        cmd = "%s -s %s -S low -c %s -o %s -i %s " % (
-            self.SPI_CMD,
-            self.cs,
-            self.clk,
-            self.mosi,
-            self.miso,
-        )
+        cmd = f"{self.SPI_CMD} -s {self.cs} -S low -c {self.clk} -o {self.mosi} -i {self.miso} "
+
         if len(bytes_to_write):
-            write_cmd = "-w %s %s " % (
-                len(bytes_to_write) * 8,
-                " ".join([str(byte) for byte in bytes_to_write]),
-            )
+            write_cmd = f'-w {len(bytes_to_write) * 8} {" ".join([str(byte) for byte in bytes_to_write])} '
+
         else:
             write_cmd = ""
         if to_read:
             # spi-bb will first return the exact number of bits used for
             # writing. So, total number of bits to read should also include
             # the number of bits written.
-            cmd += "-r %s " % str((len(bytes_to_write) + to_read) * 8)
+            cmd += f"-r {str((len(bytes_to_write) + to_read) * 8)} "
         cmd += write_cmd
         rc = 0
         out = (
@@ -249,9 +236,7 @@ class Bcm5396SPI:
                 sts = self.__read_spi_sts()
                 if sts & self.SPI_STS_REG_RACK:
                     break
-            bytes = []
-            for _ in range(n_bytes):
-                bytes.append(self.__read_spi_dio())
+            bytes = [self.__read_spi_dio() for _ in range(n_bytes)]
         except Exception as e:
             print(e)
         return self.__bytes2val(bytes)
@@ -316,10 +301,12 @@ class Bcm5396:
         ctrl = 0
         self.write(VLAN_PAGE, CTRL_ADDR, ctrl, 1)
         # write entry
-        if add:
-            entry = 0x1 | ((spt & 0x1F) << 1) | (fwd_map << 6) | (untag_map << 23)
-        else:
-            entry = 0x0
+        entry = (
+            0x1 | ((spt & 0x1F) << 1) | (fwd_map << 6) | (untag_map << 23)
+            if add
+            else 0x0
+        )
+
         self.write(VLAN_PAGE, ENTRY_ADDR, entry, 8)
         # write vid as the index
         self.write(VLAN_PAGE, VID_ADDR, vid & 0xFFF, 2)
@@ -362,17 +349,21 @@ class Bcm5396:
                 break
             time.sleep(0.010)  # 10ms
         entry = self.read(VLAN_PAGE, ENTRY_ADDR, 8)
-        res = {}
-        res["valid"] = True if entry & 0x1 else False
-        res["spt"] = (entry >> 1) & 0x1F
-        res["fwd"] = self.__portmap2ports((entry >> 6) & 0x1FFFF)
+        res = {
+            "valid": bool(entry & 0x1),
+            "spt": entry >> 1 & 0x1F,
+            "fwd": self.__portmap2ports((entry >> 6) & 0x1FFFF),
+        }
+
         res["untag"] = self.__portmap2ports((entry >> 23) & 0x1FFFF)
         return res
 
     def __portmap2ports(self, port_map):
         return list(
-            set([port if port_map & (0x1 << port) else None for port in range(0, 17)])
-            - set([None])
+            (
+                {port if port_map & (0x1 << port) else None for port in range(17)}
+                - {None}
+            )
         )
 
     def __ports2portmap(self, ports):
@@ -382,16 +373,16 @@ class Bcm5396:
         return port_map & 0x1FFFF
 
     def __parse_arl_result(self, vid, result):
-        is_bitset = lambda bit: True if result & (0x1 << bit) else False
+        is_bitset = lambda bit: bool(result & (0x1 << bit))
         if not is_bitset(3):
             return None
-        res = {}
-        # parse vid first
-        res["vid"] = (vid >> 48) & 0xFFF
+        res = {"vid": vid >> 48 & 0xFFF}
         mac_val = vid & 0xFFFFFFFFFFFF
-        mac_list = []
-        for pos in range(5, -1, -1):
-            mac_list.append("{:02x}".format((mac_val >> (pos * 8)) & 0xFF))
+        mac_list = [
+            "{:02x}".format((mac_val >> (pos * 8)) & 0xFF)
+            for pos in range(5, -1, -1)
+        ]
+
         res["mac"] = ":".join(mac_list)
         if mac_val & (0x1 << 40):
             res["ports"] = self.__portmap2ports((result >> 6) & 0xFFFF)
@@ -433,8 +424,7 @@ class Bcm5396:
             ]:
                 vid = self.read(ARL_PAGE, vid_addr, 8)
                 result = self.read(ARL_PAGE, result_addr, 4)
-                one = self.__parse_arl_result(vid, result)
-                if one:
+                if one := self.__parse_arl_result(vid, result):
                     all.append(one)
         return all
 
@@ -449,10 +439,9 @@ class Bcm5396:
             if not ctrl & VLAN_CTRL0_B_EN_1QVLAN:
                 need_write = True
                 ctrl |= VLAN_CTRL0_B_EN_1QVLAN
-        else:
-            if ctrl & VLAN_CTRL0_B_EN_1QVLAN:
-                need_write = True
-                ctrl &= (~VLAN_CTRL0_B_EN_1QVLAN) & 0xFF
+        elif ctrl & VLAN_CTRL0_B_EN_1QVLAN:
+            need_write = True
+            ctrl &= (~VLAN_CTRL0_B_EN_1QVLAN) & 0xFF
         if need_write:
             self.write(VLAN_CTRL_PAGE, VLAN_CTRL0_REG, ctrl, 1)
 
@@ -461,11 +450,11 @@ class Bcm5396:
         VLAN_PORT_REG_BASE = 0x10
 
         if port < 0 or port > 16:
-            raise Exception("Invalid port number %s" % port)
+            raise Exception(f"Invalid port number {port}")
         if pri < 0 or pri > 7:
-            raise Exception("Invalid priority %s" % pri)
+            raise Exception(f"Invalid priority {pri}")
         if vid < 0 or vid > 0xFFF:
-            raise Exception("Invalid VLAN %s" % vid)
+            raise Exception(f"Invalid VLAN {vid}")
         reg = VLAN_PORT_REG_BASE + port * 2
         ctrl = (pri << 13) | vid
         self.write(VLAN_PORT_PAGE, reg, ctrl, 2)
@@ -475,10 +464,7 @@ class Bcm5396:
         VLAN_PORT_REG_BASE = 0x10
 
         if port < 0 or port > 16:
-            raise Exception("Invalid port number %s" % port)
+            raise Exception(f"Invalid port number {port}")
         reg = VLAN_PORT_REG_BASE + port * 2
         val = self.read(VLAN_PORT_PAGE, reg, 2)
-        res = {}
-        res["priority"] = (val >> 13) & 0x7
-        res["vid"] = val & 0xFFF
-        return res
+        return {"priority": val >> 13 & 0x7, "vid": val & 0xFFF}

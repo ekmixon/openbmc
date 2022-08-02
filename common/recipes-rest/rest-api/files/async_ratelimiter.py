@@ -46,10 +46,9 @@ class AsyncRateLimiter:
             return False
         if self._request_counter[(endpoint, method, user_agent)] >= self.limit:
             return True
-        else:
-            self._request_counter[(endpoint, method, user_agent)] += 1
-            asyncio.ensure_future(self._cleanup(endpoint, method, user_agent))
-            return False
+        self._request_counter[(endpoint, method, user_agent)] += 1
+        asyncio.ensure_future(self._cleanup(endpoint, method, user_agent))
+        return False
 
     async def _cleanup(self, endpoint: str, method: str, user_agent: str):
         await asyncio.sleep(self.slidewindow_size)

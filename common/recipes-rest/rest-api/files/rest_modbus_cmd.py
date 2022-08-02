@@ -41,12 +41,10 @@ async def post_modbus_cmd(request: aiohttp.web.Request) -> aiohttp.web.Response:
 
     except ValueError as e:
         return aiohttp.web.json_response(
-            {
-                "status": "Bad Request",
-                "details": "Invalid payload: " + str(e),
-            },
+            {"status": "Bad Request", "details": f"Invalid payload: {str(e)}"},
             status=400,
         )
+
 
     responses = []
     # Get soliton beam lock so we don't race with it or modbuscmd
@@ -146,12 +144,13 @@ def _validate_payload_schema(payload, schema, path=""):
     if type(schema) == type(payload) == dict and schema.keys() == payload.keys():
         for key, subschema in schema.items():
             _validate_payload_schema(
-                payload=payload[key], schema=subschema, path=path + "." + key
+                payload=payload[key], schema=subschema, path=f"{path}.{key}"
             )
+
 
     elif type(schema) == type(payload) == list:
         for value in payload:
-            _validate_payload_schema(payload=value, schema=schema[0], path=path + "[]")
+            _validate_payload_schema(payload=value, schema=schema[0], path=f"{path}[]")
 
     elif not _schema_match(payload, schema):
         raise ValueError(
@@ -186,7 +185,7 @@ def _validate_payload_commands(commands: List[str]) -> None:
                 )
             )
 
-        if not all(0 <= x <= 0xFF for x in cmd):
+        if any((0 <= x <= 0xFF for x in cmd)):
             raise ValueError(
                 "Byte value out of range in .commands[{i}] ({cmd})".format(
                     i=i, cmd=repr(cmd)

@@ -89,10 +89,10 @@ def is_boot_from_secondary() -> bool:
 def main():
     soc_model = get_soc_model()
 
-    print("SoC model: {}".format(soc_model))
+    print(f"SoC model: {soc_model}")
 
     source = is_boot_from_secondary()
-    print("Boot from secondary: {}".format(source))
+    print(f"Boot from secondary: {source}")
 
 
 if __name__ == "__main__":

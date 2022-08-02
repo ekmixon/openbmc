@@ -51,7 +51,7 @@ class GpioOperationFailure(Exception):
         try:
             self.message = os.strerror(self.errno)
         except ValueError:
-            self.message = "ERROR: %s" % (self.errno)
+            self.message = f"ERROR: {self.errno}"
 
 
 def gpio_export_by_name(chip, name, shadow):

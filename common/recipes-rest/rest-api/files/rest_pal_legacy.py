@@ -61,8 +61,7 @@ def pal_get_platform_name():
                 machine = tmp2[0]
         return machine
     name = create_string_buffer(16)
-    ret = lpal_hndl.pal_get_platform_name(name)
-    if ret:
+    if ret := lpal_hndl.pal_get_platform_name(name):
         return None
     else:
         return name.value.decode()
@@ -73,11 +72,7 @@ def pal_get_num_slots():
         return 1
     num = c_ubyte()
     p_num = pointer(num)
-    ret = lpal_hndl.pal_get_num_slots(p_num)
-    if ret:
-        return None
-    else:
-        return num.value
+    return None if (ret := lpal_hndl.pal_get_num_slots(p_num)) else num.value
 
 
 def pal_is_fru_prsnt(slot_id):
@@ -85,8 +80,7 @@ def pal_is_fru_prsnt(slot_id):
         return None
     status = c_ubyte()
     p_status = pointer(status)
-    ret = lpal_hndl.pal_is_fru_prsnt(slot_id, p_status)
-    if ret:
+    if ret := lpal_hndl.pal_is_fru_prsnt(slot_id, p_status):
         return None
     else:
         return status.value
@@ -98,8 +92,7 @@ def pal_get_server_power(slot_id):
         return None
     status = c_ubyte()
     p_status = pointer(status)
-    ret = lpal_hndl.pal_get_server_power(slot_id, p_status)
-    if ret:
+    if ret := lpal_hndl.pal_get_server_power(slot_id, p_status):
         return None
     else:
         return status.value
@@ -109,8 +102,7 @@ def pal_get_fru_name(slot_id):
     if lpal_hndl is None:
         return None
     name = create_string_buffer(16)
-    ret = lpal_hndl.pal_get_fru_name(slot_id, name)
-    if ret:
+    if ret := lpal_hndl.pal_get_fru_name(slot_id, name):
         return None
     else:
         return name.value.decode()
@@ -135,10 +127,7 @@ def pal_get_bic_status(slot_id):
 
     try:
         ret = check_output(cmd).decode()
-        if "Usage:" in ret or "fail " in ret:
-            return 0
-        else:
-            return 1
+        return 0 if "Usage:" in ret or "fail " in ret else 1
     except (OSError, IOError):
         return PAL_STATUS_UNSUPPORTED  # No bic on this platform
     except (CalledProcessError):
@@ -150,68 +139,65 @@ def pal_server_action(slot_id, command, fru_name=None):
     if lpal_hndl is None:
         return -1
     if (
-        command == "power-off"
-        or command == "power-on"
-        or command == "power-reset"
-        or command == "power-cycle"
-        or command == "graceful-shutdown"
+        command
+        in [
+            "power-off",
+            "power-on",
+            "power-reset",
+            "power-cycle",
+            "graceful-shutdown",
+        ]
+        and lpal_hndl.pal_is_slot_server(slot_id) == 0
     ):
-        if lpal_hndl.pal_is_slot_server(slot_id) == 0:
-            return -2
+        return -2
 
     fru_name = pal_get_fru_name(slot_id)
 
     if "server" in fru_name and "identify" in command:
         fru = ""
     elif fru_name is None:
-        fru = "slot" + str(slot_id)
+        fru = f"slot{str(slot_id)}"
     else:
         fru = fru_name
 
-    if command == "power-off":
-        cmd = "/usr/local/bin/power-util " + fru + " off"
-    elif command == "power-on":
-        cmd = "/usr/local/bin/power-util " + fru + " on"
-    elif command == "power-reset":
-        cmd = "/usr/local/bin/power-util " + fru + " reset"
-    elif command == "power-cycle":
-        cmd = "/usr/local/bin/power-util " + fru + " cycle"
-    elif command == "graceful-shutdown":
-        cmd = "/usr/local/bin/power-util " + fru + " graceful-shutdown"
+    if command == "12V-cycle":
+        cmd = f"/usr/local/bin/power-util {fru} 12V-cycle"
     elif command == "12V-off":
-        cmd = "/usr/local/bin/power-util " + fru + " 12V-off"
+        cmd = f"/usr/local/bin/power-util {fru} 12V-off"
     elif command == "12V-on":
-        cmd = "/usr/local/bin/power-util " + fru + " 12V-on"
-    elif command == "12V-cycle":
-        cmd = "/usr/local/bin/power-util " + fru + " 12V-cycle"
-    elif command == "identify-on":
-        cmd = "/usr/bin/fpc-util " + fru + " --identify on"
+        cmd = f"/usr/local/bin/power-util {fru} 12V-on"
+    elif command == "graceful-shutdown":
+        cmd = f"/usr/local/bin/power-util {fru} graceful-shutdown"
     elif command == "identify-off":
-        cmd = "/usr/bin/fpc-util " + fru + " --identify off"
+        cmd = f"/usr/bin/fpc-util {fru} --identify off"
+    elif command == "identify-on":
+        cmd = f"/usr/bin/fpc-util {fru} --identify on"
+    elif command == "power-cycle":
+        cmd = f"/usr/local/bin/power-util {fru} cycle"
+    elif command == "power-off":
+        cmd = f"/usr/local/bin/power-util {fru} off"
+    elif command == "power-on":
+        cmd = f"/usr/local/bin/power-util {fru} on"
+    elif command == "power-reset":
+        cmd = f"/usr/local/bin/power-util {fru} reset"
     else:
         return -1
     ret = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-    if ret.find("Usage:") != -1 or ret.find("fail ") != -1:
-        return -1
-    else:
-        return 0
+    return -1 if ret.find("Usage:") != -1 or ret.find("fail ") != -1 else 0
 
 
 def pal_sled_action(command):
     if command == "sled-cycle":
         cmd = ["/usr/local/bin/power-util", "sled-cycle"]
-    elif command == "sled-identify-on":
-        cmd = ["/usr/bin/fpc-util", "sled", "--identify", "on"]
     elif command == "sled-identify-off":
         cmd = ["/usr/bin/fpc-util", "sled", "--identify", "off"]
+    elif command == "sled-identify-on":
+        cmd = ["/usr/bin/fpc-util", "sled", "--identify", "on"]
     else:
         return -1
     try:
         ret = check_output(cmd).decode()
-        if ret.startswith("Usage"):
-            return -1
-        else:
-            return 0
+        return -1 if ret.startswith("Usage") else 0
     except (OSError, IOError, CalledProcessError):
         return -1
 
@@ -250,8 +236,7 @@ def pal_get_fru_capability(fru):
         return None
     cap = c_uint32()
     p_cap = pointer(cap)
-    ret = lpal_hndl.pal_get_fru_capability(fru, p_cap)
-    if ret:
+    if ret := lpal_hndl.pal_get_fru_capability(fru, p_cap):
         return None
     else:
         return cap.value

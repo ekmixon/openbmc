@@ -11,14 +11,8 @@ class healthNode(node):
     def __init__(self, name=None, info=None, actions=None):
         self.name = name
 
-        if info == None:
-            self.info = {}
-        else:
-            self.info = info
-        if actions == None:
-            self.actions = []
-        else:
-            self.actions = actions
+        self.info = {} if info is None else info
+        self.actions = [] if actions is None else actions
 
     async def getInformation(self, param={}):
         # Get Platform Name
@@ -79,9 +73,7 @@ class healthNode(node):
                 result = "Good"
             else:
                 result = "Bad"
-        info = {"Status of enclosure health LED": result}
-
-        return info
+        return {"Status of enclosure health LED": result}
 
 
 def get_node_health():
